@@ -132,7 +132,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-// ![get-psnr]
 double getPSNR(const Mat& I1, const Mat& I2)
 {
     Mat s1;
@@ -153,9 +152,6 @@ double getPSNR(const Mat& I1, const Mat& I2)
         return psnr;
     }
 }
-// ![get-psnr]
-
-// ![get-mssim]
 
 Scalar getMSSIM( const Mat& i1, const Mat& i2)
 {
@@ -209,4 +205,3 @@ Scalar getMSSIM( const Mat& i1, const Mat& i2)
     Scalar mssim = mean(ssim_map);   // mssim = average of ssim map
     return mssim;
 }
-// ![get-mssim]

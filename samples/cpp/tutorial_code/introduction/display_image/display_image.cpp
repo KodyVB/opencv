@@ -4,36 +4,49 @@
 #include <opencv2/highgui.hpp>
 
 #include <iostream>
-
-using namespace cv;
+#include <string>
 //! [includes]
 
-int main()
+//! [namespace]
+using namespace cv;
+//! [namespace]
+
+using namespace std;
+
+int main( int argc, char** argv )
 {
+    //! [load]
+    String imageName( "../data/HappyFish.jpg" ); // by default
+    if( argc > 1)
+    {
+        imageName = argv[1];
+    }
+    //! [load]
+
+    //! [mat]
+    Mat image;
+    //! [mat]
+
     //! [imread]
-    std::string image_path = samples::findFile("starry_night.jpg");
-    Mat img = imread(image_path, IMREAD_COLOR);
+    image = imread( imageName, IMREAD_COLOR ); // Read the file
     //! [imread]
 
-    //! [empty]
-    if(img.empty())
+    if( image.empty() )                      // Check for invalid input
     {
-        std::cout << "Could not read the image: " << image_path << std::endl;
-        return 1;
+        cout <<  "Could not open or find the image" << std::endl ;
+        return -1;
     }
-    //! [empty]
+
+    //! [window]
+    namedWindow( "Display window", WINDOW_AUTOSIZE ); // Create a window for display.
+    //! [window]
 
     //! [imshow]
-    imshow("Display window", img);
-    int k = waitKey(0); // Wait for a keystroke in the window
+    imshow( "Display window", image );                // Show our image inside it.
     //! [imshow]
 
-    //! [imsave]
-    if(k == 's')
-    {
-        imwrite("starry_night.png", img);
-    }
-    //! [imsave]
-
+    //! [wait]
+    waitKey(0); // Wait for a keystroke in the window
+    //! [wait]
     return 0;
 }

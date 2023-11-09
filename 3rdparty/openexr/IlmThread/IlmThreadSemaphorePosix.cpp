@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2005-2012, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2005, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -46,15 +46,14 @@
 #include "IlmThreadSemaphore.h"
 #include "Iex.h"
 #include <assert.h>
-#include <errno.h>
 
-ILMTHREAD_INTERNAL_NAMESPACE_SOURCE_ENTER
+namespace IlmThread {
 
 
 Semaphore::Semaphore (unsigned int value)
 {
     if (::sem_init (&_semaphore, 0, value))
-	IEX_NAMESPACE::throwErrnoExc ("Cannot initialize semaphore (%T).");
+    Iex::throwErrnoExc ("Cannot initialize semaphore (%T).");
 }
 
 
@@ -68,9 +67,7 @@ Semaphore::~Semaphore ()
 void
 Semaphore::wait ()
 {
-    while( ::sem_wait( &_semaphore ) == -1 && errno == EINTR )
-    {
-    }
+    ::sem_wait (&_semaphore);
 }
 
 
@@ -85,7 +82,7 @@ void
 Semaphore::post ()
 {
     if (::sem_post (&_semaphore))
-        IEX_NAMESPACE::throwErrnoExc ("Post operation on semaphore failed (%T).");
+        Iex::throwErrnoExc ("Post operation on semaphore failed (%T).");
 }
 
 
@@ -95,12 +92,12 @@ Semaphore::value () const
     int value;
 
     if (::sem_getvalue (&_semaphore, &value))
-        IEX_NAMESPACE::throwErrnoExc ("Cannot read semaphore value (%T).");
+        Iex::throwErrnoExc ("Cannot read semaphore value (%T).");
 
     return value;
 }
 
 
-ILMTHREAD_INTERNAL_NAMESPACE_SOURCE_EXIT
+} // namespace IlmThread
 
 #endif

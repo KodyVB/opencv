@@ -25,7 +25,7 @@ OpenCV-Python Tutorials {#tutorial_py_root}
     In this section
     you will learn about feature detectors and descriptors
 
--   @ref tutorial_table_of_content_video
+-   @subpage tutorial_py_table_of_contents_video
 
     In this section you
     will learn different techniques to work with videos like object tracking etc.
@@ -45,10 +45,10 @@ OpenCV-Python Tutorials {#tutorial_py_root}
     In this section you
     will learn different computational photography techniques like image denoising etc.
 
--   @ref tutorial_table_of_content_objdetect
+-   @subpage tutorial_py_table_of_contents_objdetect
 
     In this section you
-    will learn object detection techniques like face detection etc.
+    will object detection techniques like face detection etc.
 
 -   @subpage tutorial_py_table_of_contents_bindings
 

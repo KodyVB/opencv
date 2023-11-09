@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -44,9 +44,8 @@
 #include <ImfBoxAttribute.h>
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_ENTER
+namespace Imf {
 
-using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 
 template <>
 const char *
@@ -58,7 +57,7 @@ Box2iAttribute::staticTypeName ()
 
 template <>
 void
-Box2iAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, int version) const
+Box2iAttribute::writeValueTo (OStream &os, int) const
 {
     Xdr::write <StreamIO> (os, _value.min.x);
     Xdr::write <StreamIO> (os, _value.min.y);
@@ -69,7 +68,7 @@ Box2iAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, int v
 
 template <>
 void
-Box2iAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is, int size, int version)
+Box2iAttribute::readValueFrom (IStream &is, int, int)
 {
     Xdr::read <StreamIO> (is, _value.min.x);
     Xdr::read <StreamIO> (is, _value.min.y);
@@ -88,7 +87,7 @@ Box2fAttribute::staticTypeName ()
 
 template <>
 void
-Box2fAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, int version) const
+Box2fAttribute::writeValueTo (OStream &os, int) const
 {
     Xdr::write <StreamIO> (os, _value.min.x);
     Xdr::write <StreamIO> (os, _value.min.y);
@@ -99,7 +98,7 @@ Box2fAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, int v
 
 template <>
 void
-Box2fAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is, int size, int version)
+Box2fAttribute::readValueFrom (IStream &is, int, int)
 {
     Xdr::read <StreamIO> (is, _value.min.x);
     Xdr::read <StreamIO> (is, _value.min.y);
@@ -108,4 +107,4 @@ Box2fAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is, int 
 }
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_EXIT 
+} // namespace Imf

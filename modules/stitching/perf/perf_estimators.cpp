@@ -2,13 +2,15 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/opencv_modules.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::tuple;
+using std::tr1::get;
 
 typedef TestBaseWithParam<tuple<string, string> > bundleAdjuster;
 
-#if defined(HAVE_OPENCV_XFEATURES2D) && defined(OPENCV_ENABLE_NONFREE)
+#ifdef HAVE_OPENCV_XFEATURES2D
 #define TEST_DETECTORS testing::Values("surf", "orb")
 #else
 #define TEST_DETECTORS testing::Values<string>("orb")
@@ -22,15 +24,19 @@ PERF_TEST_P(bundleAdjuster, affine, testing::Combine(TEST_DETECTORS, AFFINE_FUNC
     Mat img2, img2_full = imread(getDataPath("stitching/s2.jpg"));
     float scale1 = (float)std::min(1.0, sqrt(WORK_MEGAPIX * 1e6 / img1_full.total()));
     float scale2 = (float)std::min(1.0, sqrt(WORK_MEGAPIX * 1e6 / img2_full.total()));
-    resize(img1_full, img1, Size(), scale1, scale1, INTER_LINEAR_EXACT);
-    resize(img2_full, img2, Size(), scale2, scale2, INTER_LINEAR_EXACT);
+    resize(img1_full, img1, Size(), scale1, scale1);
+    resize(img2_full, img2, Size(), scale2, scale2);
 
     string detector = get<0>(GetParam());
     string affine_fun = get<1>(GetParam());
 
-    Ptr<Feature2D> finder = getFeatureFinder(detector);
+    Ptr<detail::FeaturesFinder> finder;
     Ptr<detail::FeaturesMatcher> matcher;
     Ptr<detail::BundleAdjusterBase> bundle_adjuster;
+    if (detector == "surf")
+        finder = makePtr<detail::SurfFeaturesFinder>();
+    else if (detector == "orb")
+        finder = makePtr<detail::OrbFeaturesFinder>();
     if (affine_fun == "affinePartial")
     {
         matcher = makePtr<detail::AffineBestOf2NearestMatcher>(false);
@@ -50,7 +56,7 @@ PERF_TEST_P(bundleAdjuster, affine, testing::Combine(TEST_DETECTORS, AFFINE_FUNC
     std::vector<detail::CameraParams> cameras;
     std::vector<detail::CameraParams> cameras2;
 
-    computeImageFeatures(finder, images, features);
+    (*finder)(images, features);
     (*matcher)(features, pairwise_matches);
     if (!(*estimator)(features, pairwise_matches, cameras))
         FAIL() << "estimation failed. this should never happen.";
@@ -92,5 +98,3 @@ PERF_TEST_P(bundleAdjuster, affine, testing::Combine(TEST_DETECTORS, AFFINE_FUNC
     EXPECT_FLOAT_EQ(h.at<float>(1), 0.f);
     EXPECT_FLOAT_EQ(h.at<float>(2), 1.f);
 }
-
-} // namespace

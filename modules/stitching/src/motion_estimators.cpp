@@ -41,7 +41,6 @@
 //M*/
 
 #include "precomp.hpp"
-#include "opencv2/core/core_c.h"
 #include "opencv2/calib3d/calib3d_c.h"
 #include "opencv2/core/cvdef.h"
 
@@ -90,7 +89,7 @@ struct CalcRotation
 
 
 /**
- * @brief Functor calculating final transformation by chaining linear transformations
+ * @brief Functor calculating final tranformation by chaining linear transformations
  */
 struct CalcAffineTransform
 {
@@ -200,7 +199,7 @@ bool AffineBasedEstimator::estimate(const std::vector<ImageFeatures> &features,
                                     const std::vector<MatchesInfo> &pairwise_matches,
                                     std::vector<CameraParams> &cameras)
 {
-    cameras.assign(features.size(), CameraParams());
+    cameras.resize(features.size());
     const int num_images = static_cast<int>(features.size());
 
     // find maximum spaning tree on pairwise matches
@@ -256,15 +255,13 @@ bool BundleAdjusterBase::estimate(const std::vector<ImageFeatures> &features,
 
     CvLevMarq solver(num_images_ * num_params_per_cam_,
                      total_num_matches_ * num_errs_per_measurement_,
-                     cvTermCriteria(term_criteria_));
+                     term_criteria_);
 
     Mat err, jac;
-    CvMat matParams = cvMat(cam_params_);
+    CvMat matParams = cam_params_;
     cvCopy(&matParams, solver.param);
 
-#if ENABLE_LOG
     int iter = 0;
-#endif
     for(;;)
     {
         const CvMat* _param = 0;
@@ -281,7 +278,7 @@ bool BundleAdjusterBase::estimate(const std::vector<ImageFeatures> &features,
         if (_jac)
         {
             calcJacobian(jac);
-            CvMat tmp = cvMat(jac);
+            CvMat tmp = jac;
             cvCopy(&tmp, _jac);
         }
 
@@ -289,10 +286,8 @@ bool BundleAdjusterBase::estimate(const std::vector<ImageFeatures> &features,
         {
             calcError(err);
             LOG_CHAT(".");
-#if ENABLE_LOG
             iter++;
-#endif
-            CvMat tmp = cvMat(err);
+            CvMat tmp = err;
             cvCopy(&tmp, _err);
         }
     }
@@ -890,45 +885,6 @@ void BundleAdjusterAffinePartial::calcJacobian(Mat &jac)
 
 //////////////////////////////////////////////////////////////////////////////
 
-WaveCorrectKind autoDetectWaveCorrectKind(const std::vector<Mat> &rmats)
-{
-    std::vector<float> xs, ys;
-    xs.reserve(rmats.size());
-    ys.reserve(rmats.size());
-
-    // Project a [0, 0, 1, 1] point to the camera image frame
-    // Ignore intrinsic parameters and camera translation as they
-    // have little influence
-    // This also means we can simply use "rmat.col(2)" as the
-    // projected point homogeneous coordinate
-    for (const Mat& rmat: rmats)
-    {
-        CV_Assert(rmat.type() == CV_32F);
-        xs.push_back(rmat.at<float>(0, 2) / rmat.at<float>(2, 2));
-        ys.push_back(rmat.at<float>(1, 2) / rmat.at<float>(2, 2));
-    }
-
-    // Calculate the delta between the max and min values for
-    // both the X and Y axis
-    auto min_max_x = std::minmax_element(xs.begin(), xs.end());
-    auto min_max_y = std::minmax_element(ys.begin(), ys.end());
-    double delta_x = *min_max_x.second - *min_max_x.first;
-    double delta_y = *min_max_y.second - *min_max_y.first;
-
-    // If the Y delta is the biggest, it means the images
-    // mostly span along the vertical axis: correct this axis
-    if (delta_y > delta_x)
-    {
-        LOGLN("  using vertical wave correction");
-        return WAVE_CORRECT_VERT;
-    }
-    else
-    {
-        LOGLN("  using horizontal wave correction");
-        return WAVE_CORRECT_HORIZ;
-    }
-}
-
 void waveCorrect(std::vector<Mat> &rmats, WaveCorrectKind kind)
 {
     LOGLN("Wave correcting...");
@@ -941,18 +897,12 @@ void waveCorrect(std::vector<Mat> &rmats, WaveCorrectKind kind)
         return;
     }
 
-    if (kind == WAVE_CORRECT_AUTO)
-    {
-        kind = autoDetectWaveCorrectKind(rmats);
-    }
-
     Mat moment = Mat::zeros(3, 3, CV_32F);
     for (size_t i = 0; i < rmats.size(); ++i)
     {
         Mat col = rmats[i].col(0);
         moment += col * col.t();
     }
-
     Mat eigen_vals, eigen_vecs;
     eigen(moment, eigen_vals, eigen_vecs);
 
@@ -1018,13 +968,13 @@ void waveCorrect(std::vector<Mat> &rmats, WaveCorrectKind kind)
 
 //////////////////////////////////////////////////////////////////////////////
 
-String matchesGraphAsString(std::vector<String> &paths, std::vector<MatchesInfo> &pairwise_matches,
-                            float conf_threshold)
+String matchesGraphAsString(std::vector<String> &pathes, std::vector<MatchesInfo> &pairwise_matches,
+                                float conf_threshold)
 {
     std::stringstream str;
     str << "graph matches_graph{\n";
 
-    const int num_images = static_cast<int>(paths.size());
+    const int num_images = static_cast<int>(pathes.size());
     std::set<std::pair<int,int> > span_tree_edges;
     DisjointSets comps(num_images);
 
@@ -1050,12 +1000,12 @@ String matchesGraphAsString(std::vector<String> &paths, std::vector<MatchesInfo>
         std::pair<int,int> edge = *itr;
         if (span_tree_edges.find(edge) != span_tree_edges.end())
         {
-            String name_src = paths[edge.first];
+            String name_src = pathes[edge.first];
             size_t prefix_len = name_src.find_last_of("/\\");
             if (prefix_len != String::npos) prefix_len++; else prefix_len = 0;
             name_src = name_src.substr(prefix_len, name_src.size() - prefix_len);
 
-            String name_dst = paths[edge.second];
+            String name_dst = pathes[edge.second];
             prefix_len = name_dst.find_last_of("/\\");
             if (prefix_len != String::npos) prefix_len++; else prefix_len = 0;
             name_dst = name_dst.substr(prefix_len, name_dst.size() - prefix_len);
@@ -1072,7 +1022,7 @@ String matchesGraphAsString(std::vector<String> &paths, std::vector<MatchesInfo>
     {
         if (comps.size[comps.findSetByElem((int)i)] == 1)
         {
-            String name = paths[i];
+            String name = pathes[i];
             size_t prefix_len = name.find_last_of("/\\");
             if (prefix_len != String::npos) prefix_len++; else prefix_len = 0;
             name = name.substr(prefix_len, name.size() - prefix_len);

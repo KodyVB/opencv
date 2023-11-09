@@ -42,8 +42,10 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
 
+namespace cvtest
+{
     class CV_BilateralFilterTest :
         public cvtest::BaseTest
     {
@@ -126,8 +128,7 @@ namespace opencv_test { namespace {
         d = radius*2 + 1;
         // compute the min/max range for the input image (even if multichannel)
 
-        // TODO cvtest
-        cv::minMaxLoc( src.reshape(1), &minValSrc, &maxValSrc );
+        minMaxLoc( src.reshape(1), &minValSrc, &maxValSrc );
         if(std::abs(minValSrc - maxValSrc) < FLT_EPSILON)
         {
             src.copyTo(dst);
@@ -136,8 +137,8 @@ namespace opencv_test { namespace {
 
         // temporary copy of the image with borders for easy processing
         Mat temp;
-        cv::copyMakeBorder( src, temp, radius, radius, radius, radius, borderType );
-        cv::patchNaNs(temp);
+        copyMakeBorder( src, temp, radius, radius, radius, radius, borderType );
+        patchNaNs(temp);
 
         // allocate lookup tables
         vector<float> _space_weight(d*d);
@@ -203,7 +204,7 @@ namespace opencv_test { namespace {
             }
             else
             {
-                CV_Assert( cn == 3 );
+                assert( cn == 3 );
                 for( j = 0; j < size.width*3; j += 3 )
                 {
                     float sum_b = 0, sum_g = 0, sum_r = 0, wsum = 0;
@@ -250,23 +251,20 @@ namespace opencv_test { namespace {
 
     int CV_BilateralFilterTest::validate_test_results(int test_case_index)
     {
-        double eps = (_src.depth() < CV_32F)?1:5e-3;
-        double e;
+        static const double eps = 4;
+
         Mat reference_dst, reference_src;
         if (_src.depth() == CV_32F)
-        {
             reference_bilateral_filter(_src, reference_dst, _d, _sigma_color, _sigma_space);
-            e = cvtest::norm(reference_dst, _parallel_dst, NORM_INF|NORM_RELATIVE);
-        }
         else
         {
             int type = _src.type();
             _src.convertTo(reference_src, CV_32F);
             reference_bilateral_filter(reference_src, reference_dst, _d, _sigma_color, _sigma_space);
             reference_dst.convertTo(reference_dst, type);
-            e = cvtest::norm(reference_dst, _parallel_dst, NORM_INF);
         }
 
+        double e = cvtest::norm(reference_dst, _parallel_dst, NORM_L2);
         if (e > eps)
         {
             ts->printf(cvtest::TS::CONSOLE, "actual error: %g, expected: %g", e, eps);
@@ -289,4 +287,4 @@ namespace opencv_test { namespace {
         test.safe_run();
     }
 
-}} // namespace
+} // end of namespace cvtest

@@ -7,6 +7,7 @@ Sample-launcher application.
 # Python 2/3 compatibility
 from __future__ import print_function
 import sys
+PY3 = sys.version_info[0] == 3
 
 # local modules
 from common import splitfn
@@ -16,11 +17,11 @@ import webbrowser
 from glob import glob
 from subprocess import Popen
 
-try:
-    import tkinter as tk  # Python 3
+if PY3:
+    import tkinter as tk
     from tkinter.scrolledtext import ScrolledText
-except ImportError:
-    import Tkinter as tk  # Python 2
+else:
+    import Tkinter as tk
     from ScrolledText import ScrolledText
 
 
@@ -98,7 +99,7 @@ class App:
         run_btn = tk.Button(right, command=self.on_run, text='Run', width=8)
 
         self.text = text = ScrolledText(right, font=('arial', 12, 'normal'), width = 30, wrap='word')
-        self.linker = _linker = LinkManager(text, self.on_link)
+        self.linker = linker = LinkManager(text, self.on_link)
         self.text.tag_config("header1", font=('arial', 14, 'bold'))
         self.text.tag_config("header2", font=('arial', 12, 'bold'))
         text.config(state='disabled')
@@ -114,24 +115,12 @@ class App:
     def on_demo_select(self, evt):
         name = self.demos_lb.get( self.demos_lb.curselection()[0] )
         fn = self.samples[name]
-
-        descr = ""
-        try:
-            if sys.version_info[0] > 2:
-                # Python 3.x
-                module_globals = {}
-                module_locals = {}
-                with open(fn, 'r') as f:
-                    module_code = f.read()
-                exec(compile(module_code, fn, 'exec'), module_globals, module_locals)
-                descr = module_locals.get('__doc__', 'no-description')
-            else:
-                # Python 2
-                module_globals = {}
-                execfile(fn, module_globals)  # noqa: F821
-                descr = module_globals.get('__doc__', 'no-description')
-        except Exception as e:
-            descr = str(e)
+        loc = {}
+        if PY3:
+            exec(open(fn).read(), loc)
+        else:
+            execfile(fn, loc)
+        descr = loc.get('__doc__', 'no-description')
 
         self.linker.reset()
         self.text.config(state='normal')

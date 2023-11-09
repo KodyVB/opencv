@@ -53,11 +53,12 @@
 //M*/
 
 #include "../test_precomp.hpp"
+#include "cvconfig.h"
 #include "opencv2/ts/ocl_test.hpp"
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -271,6 +272,6 @@ OCL_TEST_P(CalcHist, Mat)
 OCL_INSTANTIATE_TEST_CASE_P(Imgproc, CalcBackProject, Combine(Values((MatDepth)CV_8U), Values(1, 2), Bool()));
 OCL_INSTANTIATE_TEST_CASE_P(Imgproc, CalcHist, Values(true, false));
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

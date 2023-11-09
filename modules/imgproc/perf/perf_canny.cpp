@@ -1,11 +1,12 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-namespace opencv_test {
+using namespace std;
+using namespace cv;
+using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
-typedef tuple<string, int, bool, tuple<double, double> > Img_Aperture_L2_thresholds_t;
+typedef std::tr1::tuple<string, int, bool, std::tr1::tuple<double, double> > Img_Aperture_L2_thresholds_t;
 typedef perf::TestBaseWithParam<Img_Aperture_L2_thresholds_t> Img_Aperture_L2_thresholds;
 
 PERF_TEST_P(Img_Aperture_L2_thresholds, canny,
@@ -30,11 +31,7 @@ PERF_TEST_P(Img_Aperture_L2_thresholds, canny,
 
     declare.in(img).out(edges);
 
-    PERF_SAMPLE_BEGIN();
-        Canny(img, edges, thresh_low, thresh_high, aperture, useL2);
-    PERF_SAMPLE_END();
+    TEST_CYCLE() Canny(img, edges, thresh_low, thresh_high, aperture, useL2);
 
     SANITY_CHECK(edges);
 }
-
-} // namespace

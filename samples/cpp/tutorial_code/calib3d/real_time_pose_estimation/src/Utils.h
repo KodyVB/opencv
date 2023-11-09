@@ -10,7 +10,6 @@
 
 #include <iostream>
 
-#include <opencv2/features2d.hpp>
 #include "PnPProblem.h"
 
 // Draw a text with the question point
@@ -66,9 +65,5 @@ std::string FloatToString ( float Number );
 
 // Converts a given integer to a string
 std::string IntToString ( int Number );
-
-void createFeatures(const std::string &featureName, int numKeypoints, cv::Ptr<cv::Feature2D> &detector, cv::Ptr<cv::Feature2D> &descriptor);
-
-cv::Ptr<cv::DescriptorMatcher> createMatcher(const std::string &featureName, bool useFLANN);
 
 #endif /* UTILS_H_ */

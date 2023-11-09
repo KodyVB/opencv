@@ -41,7 +41,8 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 void loadImage(string path, Mat &img)
 {
@@ -59,7 +60,7 @@ void checkEqual(Mat img0, Mat img1, double threshold, const string& name)
 static vector<float> DEFAULT_VECTOR;
 void loadExposureSeq(String path, vector<Mat>& images, vector<float>& times = DEFAULT_VECTOR)
 {
-    std::ifstream list_file((path + "list.txt").c_str());
+    ifstream list_file((path + "list.txt").c_str());
     ASSERT_TRUE(list_file.is_open());
     string name;
     float val;
@@ -75,7 +76,7 @@ void loadExposureSeq(String path, vector<Mat>& images, vector<float>& times = DE
 void loadResponseCSV(String path, Mat& response)
 {
     response = Mat(256, 1, CV_32FC3);
-    std::ifstream resp_file(path.c_str());
+    ifstream resp_file(path.c_str());
     for(int i = 0; i < 256; i++) {
         for(int c = 0; c < 3; c++) {
             resp_file >> response.at<Vec3f>(i)[c];
@@ -104,6 +105,12 @@ TEST(Photo_Tonemap, regression)
     loadImage(test_path + "drago.png", expected);
     result.convertTo(result, CV_8UC3, 255);
     checkEqual(result, expected, 3, "Drago");
+
+    Ptr<TonemapDurand> durand = createTonemapDurand(gamma);
+    durand->process(img, result);
+    loadImage(test_path + "durand.png", expected);
+    result.convertTo(result, CV_8UC3, 255);
+    checkEqual(result, expected, 3, "Durand");
 
     Ptr<TonemapReinhard> reinhard = createTonemapReinhard(gamma);
     reinhard->process(img, result);
@@ -134,10 +141,9 @@ TEST(Photo_AlignMTB, regression)
     int errors = 0;
 
     Ptr<AlignMTB> align = createAlignMTB(max_bits);
-    RNG rng = theRNG();
 
     for(int i = 0; i < TESTS_COUNT; i++) {
-        Point shift(rng.uniform(0, max_shift), rng.uniform(0, max_shift));
+        Point shift(rand() % max_shift, rand() % max_shift);
         Mat res;
         align->shiftMat(img, res, shift);
         Point calc = align->calculateShift(img, res);
@@ -202,13 +208,17 @@ TEST(Photo_MergeRobertson, regression)
     vector<Mat> images;
     vector<float> times;
     loadExposureSeq(test_path + "exposures/", images, times);
+
     Ptr<MergeRobertson> merge = createMergeRobertson();
+
     Mat result, expected;
     loadImage(test_path + "merge/robertson.hdr", expected);
     merge->process(images, result, times);
+    Ptr<Tonemap> map = createTonemap();
+    map->process(result, result);
+    map->process(expected, expected);
 
-    const float eps = 6.f;
-    checkEqual(expected, result, eps, "MergeRobertson");
+    checkEqual(expected, result, 1e-2f, "MergeRobertson");
 }
 
 TEST(Photo_CalibrateDebevec, regression)
@@ -227,11 +237,7 @@ TEST(Photo_CalibrateDebevec, regression)
     diff = diff.mul(1.0f / response);
     double max;
     minMaxLoc(diff, NULL, &max);
-#if defined(__arm__) || defined(__aarch64__)
-    ASSERT_LT(max, 0.131);
-#else
-    ASSERT_LT(max, 0.1);
-#endif
+    ASSERT_FALSE(max > 0.1);
 }
 
 TEST(Photo_CalibrateRobertson, regression)
@@ -246,24 +252,5 @@ TEST(Photo_CalibrateRobertson, regression)
 
     Ptr<CalibrateRobertson> calibrate = createCalibrateRobertson();
     calibrate->process(images, response, times);
-    checkEqual(expected, response, 1e-1f, "CalibrateRobertson");
+    checkEqual(expected, response, 1e-3f, "CalibrateRobertson");
 }
-
-TEST(Photo_CalibrateRobertson, bug_18180)
-{
-    vector<Mat> images;
-    vector<cv::String> fn;
-    string test_path = cvtest::TS::ptr()->get_data_path() + "hdr/exposures/bug_18180/";
-    for(int i = 1; i <= 4; ++i)
-        images.push_back(imread(test_path + std::to_string(i) + ".jpg"));
-    vector<float> times {15.0f, 2.5f, 0.25f, 0.33f};
-    Mat response, expected;
-    Ptr<CalibrateRobertson> calibrate = createCalibrateRobertson(2, 0.01f);
-    calibrate->process(images, response, times);
-    Mat response_no_nans = response.clone();
-    patchNaNs(response_no_nans);
-    // since there should be no NaNs, original response vs. response with NaNs patched should be identical
-    EXPECT_EQ(0.0, cv::norm(response, response_no_nans, NORM_L2));
-}
-
-}} // namespace

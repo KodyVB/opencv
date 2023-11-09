@@ -19,18 +19,19 @@ Keys:
 from __future__ import print_function
 
 import numpy as np
-import cv2 as cv
-
+import cv2
 from common import Sketcher
 
-def main():
+if __name__ == '__main__':
     import sys
     try:
         fn = sys.argv[1]
     except:
-        fn = 'fruits.jpg'
+        fn = '../data/fruits.jpg'
 
-    img = cv.imread(cv.samples.findFile(fn))
+    print(__doc__)
+
+    img = cv2.imread(fn)
     if img is None:
         print('Failed to load image file:', fn)
         sys.exit(1)
@@ -40,21 +41,14 @@ def main():
     sketch = Sketcher('img', [img_mark, mark], lambda : ((255, 255, 255), 255))
 
     while True:
-        ch = cv.waitKey()
+        ch = cv2.waitKey()
         if ch == 27:
             break
         if ch == ord(' '):
-            res = cv.inpaint(img_mark, mark, 3, cv.INPAINT_TELEA)
-            cv.imshow('inpaint', res)
+            res = cv2.inpaint(img_mark, mark, 3, cv2.INPAINT_TELEA)
+            cv2.imshow('inpaint', res)
         if ch == ord('r'):
             img_mark[:] = img
             mark[:] = 0
             sketch.show()
-
-    print('Done')
-
-
-if __name__ == '__main__':
-    print(__doc__)
-    main()
-    cv.destroyAllWindows()
+    cv2.destroyAllWindows()

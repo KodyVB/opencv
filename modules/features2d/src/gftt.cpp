@@ -44,83 +44,40 @@
 namespace cv
 {
 
-class GFTTDetector_Impl CV_FINAL : public GFTTDetector
+class GFTTDetector_Impl : public GFTTDetector
 {
 public:
     GFTTDetector_Impl( int _nfeatures, double _qualityLevel,
-                      double _minDistance, int _blockSize, int _gradientSize,
+                      double _minDistance, int _blockSize,
                       bool _useHarrisDetector, double _k )
         : nfeatures(_nfeatures), qualityLevel(_qualityLevel), minDistance(_minDistance),
-        blockSize(_blockSize), gradSize(_gradientSize), useHarrisDetector(_useHarrisDetector), k(_k)
+        blockSize(_blockSize), useHarrisDetector(_useHarrisDetector), k(_k)
     {
     }
 
-    void read( const FileNode& fn) CV_OVERRIDE
+    void setMaxFeatures(int maxFeatures) { nfeatures = maxFeatures; }
+    int getMaxFeatures() const { return nfeatures; }
+
+    void setQualityLevel(double qlevel) { qualityLevel = qlevel; }
+    double getQualityLevel() const { return qualityLevel; }
+
+    void setMinDistance(double minDistance_) { minDistance = minDistance_; }
+    double getMinDistance() const { return minDistance; }
+
+    void setBlockSize(int blockSize_) { blockSize = blockSize_; }
+    int getBlockSize() const { return blockSize; }
+
+    void setHarrisDetector(bool val) { useHarrisDetector = val; }
+    bool getHarrisDetector() const { return useHarrisDetector; }
+
+    void setK(double k_) { k = k_; }
+    double getK() const { return k; }
+
+    void detect( InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask )
     {
-      // if node is empty, keep previous value
-      if (!fn["nfeatures"].empty())
-        fn["nfeatures"] >> nfeatures;
-      if (!fn["qualityLevel"].empty())
-        fn["qualityLevel"] >> qualityLevel;
-      if (!fn["minDistance"].empty())
-        fn["minDistance"] >> minDistance;
-      if (!fn["blockSize"].empty())
-        fn["blockSize"] >> blockSize;
-      if (!fn["gradSize"].empty())
-        fn["gradSize"] >> gradSize;
-      if (!fn["useHarrisDetector"].empty())
-        fn["useHarrisDetector"] >> useHarrisDetector;
-      if (!fn["k"].empty())
-        fn["k"] >> k;
-    }
-    void write( FileStorage& fs) const CV_OVERRIDE
-    {
-      if(fs.isOpened())
-      {
-        fs << "name" << getDefaultName();
-        fs << "nfeatures" << nfeatures;
-        fs << "qualityLevel" << qualityLevel;
-        fs << "minDistance" << minDistance;
-        fs << "blockSize" << blockSize;
-        fs << "gradSize" << gradSize;
-        fs << "useHarrisDetector" << useHarrisDetector;
-        fs << "k" << k;
-      }
-    }
-
-    void setMaxFeatures(int maxFeatures) CV_OVERRIDE { nfeatures = maxFeatures; }
-    int getMaxFeatures() const CV_OVERRIDE { return nfeatures; }
-
-    void setQualityLevel(double qlevel) CV_OVERRIDE { qualityLevel = qlevel; }
-    double getQualityLevel() const CV_OVERRIDE { return qualityLevel; }
-
-    void setMinDistance(double minDistance_) CV_OVERRIDE { minDistance = minDistance_; }
-    double getMinDistance() const CV_OVERRIDE { return minDistance; }
-
-    void setBlockSize(int blockSize_) CV_OVERRIDE { blockSize = blockSize_; }
-    int getBlockSize() const CV_OVERRIDE { return blockSize; }
-
-    void setGradientSize(int gradientSize_) CV_OVERRIDE { gradSize = gradientSize_; }
-    int getGradientSize() CV_OVERRIDE { return gradSize; }
-
-    void setHarrisDetector(bool val) CV_OVERRIDE { useHarrisDetector = val; }
-    bool getHarrisDetector() const CV_OVERRIDE { return useHarrisDetector; }
-
-    void setK(double k_) CV_OVERRIDE { k = k_; }
-    double getK() const CV_OVERRIDE { return k; }
-
-    void detect( InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask ) CV_OVERRIDE
-    {
-        CV_INSTRUMENT_REGION();
-
-        if(_image.empty())
-        {
-            keypoints.clear();
-            return;
-        }
+        CV_INSTRUMENT_REGION()
 
         std::vector<Point2f> corners;
-        std::vector<float> cornersQuality;
 
         if (_image.isUMat())
         {
@@ -131,7 +88,7 @@ public:
                 ugrayImage = _image.getUMat();
 
             goodFeaturesToTrack( ugrayImage, corners, nfeatures, qualityLevel, minDistance, _mask,
-                                 cornersQuality, blockSize, gradSize, useHarrisDetector, k );
+                                 blockSize, useHarrisDetector, k );
         }
         else
         {
@@ -140,14 +97,14 @@ public:
                 cvtColor( image, grayImage, COLOR_BGR2GRAY );
 
             goodFeaturesToTrack( grayImage, corners, nfeatures, qualityLevel, minDistance, _mask,
-                                 cornersQuality, blockSize, gradSize, useHarrisDetector, k );
+                                blockSize, useHarrisDetector, k );
         }
 
-        CV_Assert(corners.size() == cornersQuality.size());
-
         keypoints.resize(corners.size());
-        for (size_t i = 0; i < corners.size(); i++)
-            keypoints[i] = KeyPoint(corners[i], (float)blockSize, -1, cornersQuality[i]);
+        std::vector<Point2f>::const_iterator corner_it = corners.begin();
+        std::vector<KeyPoint>::iterator keypoint_it = keypoints.begin();
+        for( ; corner_it != corners.end(); ++corner_it, ++keypoint_it )
+            *keypoint_it = KeyPoint( *corner_it, (float)blockSize );
 
     }
 
@@ -155,31 +112,17 @@ public:
     double qualityLevel;
     double minDistance;
     int blockSize;
-    int gradSize;
     bool useHarrisDetector;
     double k;
 };
 
 
 Ptr<GFTTDetector> GFTTDetector::create( int _nfeatures, double _qualityLevel,
-                         double _minDistance, int _blockSize, int _gradientSize,
-                         bool _useHarrisDetector, double _k )
-{
-    return makePtr<GFTTDetector_Impl>(_nfeatures, _qualityLevel,
-                                      _minDistance, _blockSize, _gradientSize, _useHarrisDetector, _k);
-}
-
-Ptr<GFTTDetector> GFTTDetector::create( int _nfeatures, double _qualityLevel,
                          double _minDistance, int _blockSize,
                          bool _useHarrisDetector, double _k )
 {
     return makePtr<GFTTDetector_Impl>(_nfeatures, _qualityLevel,
-                                      _minDistance, _blockSize, 3, _useHarrisDetector, _k);
-}
-
-String GFTTDetector::getDefaultName() const
-{
-    return (Feature2D::getDefaultName() + ".GFTTDetector");
+                                      _minDistance, _blockSize, _useHarrisDetector, _k);
 }
 
 }

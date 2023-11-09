@@ -41,8 +41,7 @@
 //M*/
 
 #include "precomp.hpp"
-#include "opencv2/core/core_c.h"
-#include "calib3d_c_api.h"
+#include "opencv2/calib3d/calib3d_c.h"
 
 /************************************************************************************\
        Some backward compatibility stuff, to be moved to legacy or compat module
@@ -122,7 +121,7 @@ bool CvLevMarq::update( const CvMat*& _param, CvMat*& matJ, CvMat*& _err )
 {
     matJ = _err = 0;
 
-    CV_Assert( !err.empty() );
+    assert( !err.empty() );
     if( state == DONE )
     {
         _param = param;
@@ -155,7 +154,7 @@ bool CvLevMarq::update( const CvMat*& _param, CvMat*& matJ, CvMat*& _err )
         return true;
     }
 
-    CV_Assert( state == CHECK_ERR );
+    assert( state == CHECK_ERR );
     errNorm = cvNorm( err, 0, CV_L2 );
     if( errNorm > prevErrNorm )
     {
@@ -223,7 +222,7 @@ bool CvLevMarq::updateAlt( const CvMat*& _param, CvMat*& _JtJ, CvMat*& _JtErr, d
         return true;
     }
 
-    CV_Assert( state == CHECK_ERR );
+    assert( state == CHECK_ERR );
     if( errNorm > prevErrNorm )
     {
         if( ++lambdaLg10 <= 16 )
@@ -314,13 +313,18 @@ void CvLevMarq::step()
     if( !err )
         completeSymm( _JtJN, completeSymmFlag );
 
+#if 1
     _JtJN.diag() *= 1. + lambda;
+#else
+    _JtJN.diag() += lambda;
+#endif
     solve(_JtJN, _JtErr, nonzero_param, solveMethod);
 
     int j = 0;
     for( int i = 0; i < nparams; i++ )
         param->data.db[i] = prevParam->data.db[i] - (mask->data.ptr[i] ? nonzero_param(j++) : 0);
 }
+
 
 CV_IMPL int cvRANSACUpdateNumIters( double p, double ep, int modelPoints, int maxIters )
 {

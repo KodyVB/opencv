@@ -41,8 +41,12 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include "opencv2/calib3d/calib3d_c.h"
+#include <string>
+#include <limits>
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 template<class T> double thres() { return 1.0; }
 template<> double thres<float>() { return 1e-5; }
@@ -120,9 +124,14 @@ protected:
 
         Mat_<double> Q(4, 4);
         randu(Q, Scalar(-5), Scalar(5));
+
         Mat_<out3d_t> _3dImg(disp.size());
 
-        reprojectImageTo3D(disp, _3dImg, Q, handleMissingValues);
+        CvMat cvdisp = disp; CvMat cv_3dImg = _3dImg; CvMat cvQ = Q;
+        cvReprojectImageTo3D( &cvdisp, &cv_3dImg, &cvQ, handleMissingValues );
+
+        if (numeric_limits<OutT>::max() == numeric_limits<float>::max())
+            reprojectImageTo3D(disp, _3dImg, Q, handleMissingValues);
 
         for(int y = 0; y < disp.rows; ++y)
             for(int x = 0; x < disp.cols; ++x)
@@ -169,5 +178,3 @@ protected:
 };
 
 TEST(Calib3d_ReprojectImageTo3D, accuracy) { CV_ReprojectImageTo3DTest test; test.safe_run(); }
-
-}} // namespace

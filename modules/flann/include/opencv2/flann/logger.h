@@ -31,8 +31,6 @@
 #ifndef OPENCV_FLANN_LOGGER_H
 #define OPENCV_FLANN_LOGGER_H
 
-//! @cond IGNORED
-
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -65,12 +63,7 @@ class Logger
             stream = stdout;
         }
         else {
-#ifdef _MSC_VER
-            if (fopen_s(&stream, name, "w") != 0)
-                stream = NULL;
-#else
             stream = fopen(name,"w");
-#endif
             if (stream == NULL) {
                 stream = stdout;
             }
@@ -101,6 +94,7 @@ public:
      * Print log message
      * @param level Log level
      * @param fmt Message format
+     * @return
      */
     static int log(int level, const char* fmt, ...)
     {
@@ -132,7 +126,5 @@ private:
 };
 
 }
-
-//! @endcond
 
 #endif //OPENCV_FLANN_LOGGER_H

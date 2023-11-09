@@ -31,12 +31,6 @@
 #ifndef OPENCV_FLANN_GENERAL_H_
 #define OPENCV_FLANN_GENERAL_H_
 
-#include "opencv2/core/version.hpp"
-
-#if CV_VERSION_MAJOR <= 4
-
-//! @cond IGNORED
-
 #include "opencv2/core.hpp"
 
 namespace cvflann
@@ -52,14 +46,5 @@ public:
 
 }
 
-#define FLANN_THROW(TYPE, STR) throw FLANNException(STR)
-
-#else
-
-#define FLANN_THROW(TYPE, STR) CV_Error(TYPE, STR)
-
-#endif
-
-//! @endcond
 
 #endif  /* OPENCV_FLANN_GENERAL_H_ */

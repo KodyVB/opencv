@@ -40,11 +40,10 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include "opencv2/calib3d/calib3d_c.h"
 
-// POSIT is not exposed to C++ API yet, so the test is disabled
-#if 0
-
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 class CV_POSITTest : public cvtest::BaseTest
 {
@@ -96,7 +95,7 @@ void CV_POSITTest::run( int start_from )
     const float flFocalLength = 760.f;
     const float flEpsilon = 0.5f;
 
-    /* Initialization */
+    /* Initilization */
     criteria.type = CV_TERMCRIT_EPS|CV_TERMCRIT_ITER;
     criteria.epsilon = flEpsilon;
     criteria.max_iter = 10000;
@@ -219,9 +218,5 @@ void CV_POSITTest::run( int start_from )
 }
 
 TEST(Calib3d_POSIT, accuracy) { CV_POSITTest test; test.safe_run(); }
-
-}} // namespace
-
-#endif
 
 /* End of file. */

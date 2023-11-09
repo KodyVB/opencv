@@ -1,10 +1,5 @@
-@cond CUDA_MODULES
-Using a cv::cuda::GpuMat with thrust {#tutorial_gpu_thrust_interop}
+Using a cv::cuda::GpuMat with thrust
 ===========================================
-
-@tableofcontents
-
-@prev_tutorial{tutorial_gpu_basics_similarity}
 
 Goal
 ----
@@ -73,4 +68,3 @@ Next we will determine how many values are greater than 0 by using thrust::count
 
 We will use those results to create an output buffer for storing the copied values, we will then use copy_if with the same predicate to populate the output buffer.
 Lastly we will download the values into a CPU mat for viewing.
-@endcond

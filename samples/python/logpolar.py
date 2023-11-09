@@ -13,33 +13,27 @@ Keys:
 # Python 2/3 compatibility
 from __future__ import print_function
 
-import numpy as np
-import cv2 as cv
+import cv2
 
-def main():
+if __name__ == '__main__':
+    print(__doc__)
+
     import sys
     try:
         fn = sys.argv[1]
     except IndexError:
-        fn = 'fruits.jpg'
+        fn = '../data/fruits.jpg'
 
-    img = cv.imread(cv.samples.findFile(fn))
+    img = cv2.imread(fn)
     if img is None:
         print('Failed to load image file:', fn)
         sys.exit(1)
 
-    img2 = cv.logPolar(img, (img.shape[0]/2, img.shape[1]/2), 40, cv.WARP_FILL_OUTLIERS)
-    img3 = cv.linearPolar(img, (img.shape[0]/2, img.shape[1]/2), 40, cv.WARP_FILL_OUTLIERS)
+    img2 = cv2.logPolar(img, (img.shape[0]/2, img.shape[1]/2), 40, cv2.WARP_FILL_OUTLIERS)
+    img3 = cv2.linearPolar(img, (img.shape[0]/2, img.shape[1]/2), 40, cv2.WARP_FILL_OUTLIERS)
 
-    cv.imshow('before', img)
-    cv.imshow('logpolar', img2)
-    cv.imshow('linearpolar', img3)
+    cv2.imshow('before', img)
+    cv2.imshow('logpolar', img2)
+    cv2.imshow('linearpolar', img3)
 
-    cv.waitKey(0)
-    print('Done')
-
-
-if __name__ == '__main__':
-    print(__doc__)
-    main()
-    cv.destroyAllWindows()
+    cv2.waitKey(0)

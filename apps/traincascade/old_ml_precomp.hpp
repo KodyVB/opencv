@@ -257,7 +257,7 @@ CvMat* icvGenerateRandomClusterCenters( int seed,
 /* Fills the <labels> using <probs> by choosing the maximal probability. Outliers are
    fixed by <oulier_tresh> and have cluster label (-1). Function also controls that there
    weren't "empty" clusters by filling empty clusters with the maximal probability vector.
-   If probs_sums != NULL, fills it with the sums of probabilities for each sample (it is
+   If probs_sums != NULL, filles it with the sums of probabilities for each sample (it is
    useful for normalizing probabilities' matrice of FCM) */
 void icvFindClusterLabels( const CvMat* probs, float outlier_thresh, float r,
                            const CvMat* labels );
@@ -321,9 +321,9 @@ cvWritebackLabels( const CvMat* labels, CvMat* dst_labels,
 #define cvWritebackResponses cvWritebackLabels
 
 #define XML_FIELD_NAME "_name"
-cv::FileNode icvFileNodeGetChild( cv::FileNode& father, const char* name );
-cv::FileNode icvFileNodeGetChildArrayElem( cv::FileNode& father, const char* name,int index );
-cv::FileNode icvFileNodeGetNext( cv::FileNode& n, const char* name );
+CvFileNode* icvFileNodeGetChild(CvFileNode* father, const char* name);
+CvFileNode* icvFileNodeGetChildArrayElem(CvFileNode* father, const char* name,int index);
+CvFileNode* icvFileNodeGetNext(CvFileNode* n, const char* name);
 
 
 void cvCheckTrainData( const CvMat* train_data, int tflag,

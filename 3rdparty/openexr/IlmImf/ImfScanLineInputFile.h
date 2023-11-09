@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -42,19 +42,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "ImfHeader.h"
-#include "ImfFrameBuffer.h"
-#include "ImfThreading.h"
-#include "ImfInputStreamMutex.h"
-#include "ImfInputPartData.h"
-#include "ImfGenericInputFile.h"
-#include "ImfExport.h"
-#include "ImfNamespace.h"
+#include <ImfHeader.h>
+#include <ImfFrameBuffer.h>
+#include <ImfThreading.h>
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+namespace Imf {
 
 
-class ScanLineInputFile : public GenericInputFile
+class ScanLineInputFile
 {
   public:
 
@@ -62,8 +57,7 @@ class ScanLineInputFile : public GenericInputFile
     // Constructor
     //------------
 
-    IMF_EXPORT
-    ScanLineInputFile (const Header &header, OPENEXR_IMF_INTERNAL_NAMESPACE::IStream *is,
+    ScanLineInputFile (const Header &header, IStream *is,
                        int numThreads = globalThreadCount());
 
 
@@ -72,7 +66,6 @@ class ScanLineInputFile : public GenericInputFile
     // structures, but does not close the file.
     //-----------------------------------------
 
-    IMF_EXPORT
     virtual ~ScanLineInputFile ();
 
 
@@ -80,7 +73,6 @@ class ScanLineInputFile : public GenericInputFile
     // Access to the file name
     //------------------------
 
-    IMF_EXPORT
     const char *	fileName () const;
 
 
@@ -88,7 +80,6 @@ class ScanLineInputFile : public GenericInputFile
     // Access to the file header
     //--------------------------
 
-    IMF_EXPORT
     const Header &	header () const;
 
 
@@ -96,7 +87,6 @@ class ScanLineInputFile : public GenericInputFile
     // Access to the file format version
     //----------------------------------
 
-    IMF_EXPORT
     int			version () const;
 
 
@@ -111,7 +101,6 @@ class ScanLineInputFile : public GenericInputFile
     // to readPixels().
     //-----------------------------------------------------------
 
-    IMF_EXPORT
     void		setFrameBuffer (const FrameBuffer &frameBuffer);
 
 
@@ -119,7 +108,6 @@ class ScanLineInputFile : public GenericInputFile
     // Access to the current frame buffer
     //-----------------------------------
 
-    IMF_EXPORT
     const FrameBuffer &	frameBuffer () const;
 
 
@@ -132,30 +120,8 @@ class ScanLineInputFile : public GenericInputFile
     // writing may have been aborted prematurely.)
     //---------------------------------------------------------------
 
-    IMF_EXPORT
     bool		isComplete () const;
 
-    
-    
-    //---------------------------------------------------------------
-    // Check if SSE optimisation is enabled
-    //
-    // Call after setFrameBuffer() to query whether optimised file decoding
-    // is available - decode times will be faster if returns true
-    //
-    // Optimisation depends on the framebuffer channels and channel types
-    // as well as the file/part channels and channel types, as well as
-    // whether SSE2 instruction support was detected at compile time
-    //
-    // Calling before setFrameBuffer will throw an exception
-    //
-    //---------------------------------------------------------------
-    
-    IMF_EXPORT
-    bool                isOptimizationEnabled () const;
-    
-    
-    
 
     //---------------------------------------------------------------
     // Read pixel data:
@@ -179,9 +145,7 @@ class ScanLineInputFile : public GenericInputFile
     //
     //---------------------------------------------------------------
 
-    IMF_EXPORT
     void		readPixels (int scanLine1, int scanLine2);
-    IMF_EXPORT
     void		readPixels (int scanLine);
 
 
@@ -191,55 +155,18 @@ class ScanLineInputFile : public GenericInputFile
     // used to implement OutputFile::copyPixels()).
     //----------------------------------------------
 
-    IMF_EXPORT
     void		rawPixelData (int firstScanLine,
-				      const char *&pixelData,
-				      int &pixelDataSize);
+                      const char *&pixelData,
+                      int &pixelDataSize);
 
-   
-    //----------------------------------------------
-    // Read a scanline's worth of raw pixel data 
-    // from the file, without uncompressing it, and 
-    // store in an external buffer, pixelData. 
-    // pixelData should be pre-allocated with space 
-    // for pixelDataSize chars. 
-    //
-    // This function can be used to separate the 
-    // reading of a raw scan line from the 
-    // decompression of that scan line, for
-    // example to allow multiple scan lines to be
-    // decompressed in parallel by an application's
-    // own threads, where it is not convenient to 
-    // use the threading within the library.
-    //----------------------------------------------
-
-    IMF_EXPORT
-    void                rawPixelDataToBuffer(int scanLine,
-					     char *pixelData,
-					     int &pixelDataSize) const;
-    
-  
     struct Data;
 
   private:
 
     Data *		_data;
-
-    InputStreamMutex*   _streamData;
-
-    ScanLineInputFile   (InputPartData* part);
-
-    void                initialize(const Header& header);
-
-    friend class MultiPartInputFile;
-    friend class InputFile;
 };
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
-
-
-
-
+} // namespace Imf
 
 #endif

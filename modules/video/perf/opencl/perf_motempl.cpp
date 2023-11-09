@@ -10,7 +10,7 @@
 
 #if 0 //def HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 ///////////// UpdateMotionHistory ////////////////////////
@@ -31,6 +31,6 @@ OCL_PERF_TEST_P(UpdateMotionHistoryFixture, UpdateMotionHistory, OCL_TEST_SIZES)
     SANITY_CHECK(mhi);
 }
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

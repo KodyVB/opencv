@@ -58,53 +58,40 @@ enum BmpCompression
 
 
 // Windows Bitmap reader
-class BmpDecoder CV_FINAL : public BaseImageDecoder
+class BmpDecoder : public BaseImageDecoder
 {
 public:
 
     BmpDecoder();
-    ~BmpDecoder() CV_OVERRIDE;
+    ~BmpDecoder();
 
-    bool  readData( Mat& img ) CV_OVERRIDE;
-    bool  readHeader() CV_OVERRIDE;
+    bool  readData( Mat& img );
+    bool  readHeader();
     void  close();
 
-    ImageDecoder newDecoder() const CV_OVERRIDE;
+    ImageDecoder newDecoder() const;
 
 protected:
 
-    void  initMask();
-    void  maskBGRA(uchar* des, const uchar* src, int num, bool alpha_required);
-    void  maskBGRAtoGray(uchar* des, const uchar* src, int num);
-
-    enum Origin
-    {
-        ORIGIN_TL = 0,
-        ORIGIN_BL = 1
-    };
-
     RLByteStream    m_strm;
     PaletteEntry    m_palette[256];
-    Origin          m_origin;
+    int             m_origin;
     int             m_bpp;
     int             m_offset;
     BmpCompression  m_rle_code;
-    uint            m_rgba_mask[4];
-    int             m_rgba_bit_offset[4];
-    float           m_rgba_scale_factor[4];
 };
 
 
 // ... writer
-class BmpEncoder CV_FINAL : public BaseImageEncoder
+class BmpEncoder : public BaseImageEncoder
 {
 public:
     BmpEncoder();
-    ~BmpEncoder() CV_OVERRIDE;
+    ~BmpEncoder();
 
-    bool  write( const Mat& img, const std::vector<int>& params ) CV_OVERRIDE;
+    bool  write( const Mat& img, const std::vector<int>& params );
 
-    ImageEncoder newEncoder() const CV_OVERRIDE;
+    ImageEncoder newEncoder() const;
 };
 
 }

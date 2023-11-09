@@ -1,4 +1,4 @@
-package org.opencv.test.videoio;
+package org.opencv.test.highgui;
 
 import java.util.List;
 
@@ -35,30 +35,10 @@ public class VideoCaptureTest extends OpenCVTestCase {
         assertFalse(capture.isOpened());
     }
 
-    public void testDefaultConstructor() {
+    public void testVideoCapture() {
         capture = new VideoCapture();
         assertNotNull(capture);
         assertFalse(capture.isOpened());
-    }
-
-    public void testConstructorWithFilename() {
-        capture = new VideoCapture("some_file.avi");
-        assertNotNull(capture);
-    }
-
-    public void testConstructorWithFilenameAndExplicitlySpecifiedAPI() {
-        capture = new VideoCapture("some_file.avi", Videoio.CAP_ANY);
-        assertNotNull(capture);
-    }
-
-    public void testConstructorWithIndex() {
-        capture = new VideoCapture(0);
-        assertNotNull(capture);
-    }
-
-    public void testConstructorWithIndexAndExplicitlySpecifiedAPI() {
-        capture = new VideoCapture(0, Videoio.CAP_ANY);
-        assertNotNull(capture);
     }
 
 }

@@ -40,8 +40,6 @@
 //M*/
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
-
 void make_noisy(const cv::Mat& img, cv::Mat& noisy, double sigma, double pepper_salt_ratio,cv::RNG& rng)
 {
     noisy.create(img.size(), img.type());
@@ -57,7 +55,6 @@ void make_noisy(const cv::Mat& img, cv::Mat& noisy, double sigma, double pepper_
     cv::addWeighted(noisy, 1, noise, 1, -128, noisy);
 }
 
-#if 0
 void make_spotty(cv::Mat& img,cv::RNG& rng, int r=3,int n=1000)
 {
     for(int i=0;i<n;i++)
@@ -69,7 +66,6 @@ void make_spotty(cv::Mat& img,cv::RNG& rng, int r=3,int n=1000)
             img(cv::Range(y,y+r),cv::Range(x,x+r))=(uchar)255;
     }
 }
-#endif
 
 bool validate_pixel(const cv::Mat& image,int x,int y,uchar val)
 {
@@ -125,5 +121,3 @@ TEST(Optim_denoise_tvl1, regression_basic)
 #endif
 
 }
-
-}} // namespace

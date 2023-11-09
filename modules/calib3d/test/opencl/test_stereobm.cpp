@@ -46,7 +46,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 PARAM_TEST_CASE(StereoBMFixture, int, int)

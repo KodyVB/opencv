@@ -9,9 +9,13 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
-using namespace perf;
+namespace cvtest {
 namespace ocl {
+
+using namespace cv;
+using namespace perf;
+using namespace std;
+using namespace std::tr1;
 
 #define SURF_MATCH_CONFIDENCE 0.65f
 #define ORB_MATCH_CONFIDENCE  0.3f
@@ -19,10 +23,10 @@ namespace ocl {
 
 typedef TestBaseWithParam<string> stitch;
 
-#if defined(HAVE_OPENCV_XFEATURES2D) && defined(OPENCV_ENABLE_NONFREE)
-#define TEST_DETECTORS testing::Values("surf", "orb", "akaze")
+#ifdef HAVE_OPENCV_XFEATURES2D
+#define TEST_DETECTORS testing::Values("surf", "orb")
 #else
-#define TEST_DETECTORS testing::Values("orb", "akaze")
+#define TEST_DETECTORS testing::Values<string>("orb")
 #endif
 
 OCL_PERF_TEST_P(stitch, a123, TEST_DETECTORS)
@@ -35,7 +39,10 @@ OCL_PERF_TEST_P(stitch, a123, TEST_DETECTORS)
     _imgs.push_back( imread( getDataPath("stitching/a3.png") ) );
     vector<UMat> imgs = ToUMat(_imgs);
 
-    Ptr<Feature2D> featuresFinder = getFeatureFinder(GetParam());
+    Ptr<detail::FeaturesFinder> featuresFinder = GetParam() == "orb"
+            ? Ptr<detail::FeaturesFinder>(new detail::OrbFeaturesFinder())
+            : Ptr<detail::FeaturesFinder>(new detail::SurfFeaturesFinder());
+
     Ptr<detail::FeaturesMatcher> featuresMatcher = GetParam() == "orb"
             ? makePtr<detail::BestOf2NearestMatcher>(false, ORB_MATCH_CONFIDENCE)
             : makePtr<detail::BestOf2NearestMatcher>(false, SURF_MATCH_CONFIDENCE);
@@ -44,14 +51,14 @@ OCL_PERF_TEST_P(stitch, a123, TEST_DETECTORS)
 
     while(next())
     {
-        Ptr<Stitcher> stitcher = Stitcher::create();
-        stitcher->setFeaturesFinder(featuresFinder);
-        stitcher->setFeaturesMatcher(featuresMatcher);
-        stitcher->setWarper(makePtr<SphericalWarper>());
-        stitcher->setRegistrationResol(WORK_MEGAPIX);
+        Stitcher stitcher = Stitcher::createDefault();
+        stitcher.setFeaturesFinder(featuresFinder);
+        stitcher.setFeaturesMatcher(featuresMatcher);
+        stitcher.setWarper(makePtr<SphericalWarper>());
+        stitcher.setRegistrationResol(WORK_MEGAPIX);
 
         startTimer();
-        stitcher->stitch(imgs, pano);
+        stitcher.stitch(imgs, pano);
         stopTimer();
     }
 
@@ -69,7 +76,10 @@ OCL_PERF_TEST_P(stitch, b12, TEST_DETECTORS)
     imgs.push_back( imread( getDataPath("stitching/b1.png") ) );
     imgs.push_back( imread( getDataPath("stitching/b2.png") ) );
 
-    Ptr<Feature2D> featuresFinder = getFeatureFinder(GetParam());
+    Ptr<detail::FeaturesFinder> featuresFinder = GetParam() == "orb"
+            ? Ptr<detail::FeaturesFinder>(new detail::OrbFeaturesFinder())
+            : Ptr<detail::FeaturesFinder>(new detail::SurfFeaturesFinder());
+
     Ptr<detail::FeaturesMatcher> featuresMatcher = GetParam() == "orb"
             ? makePtr<detail::BestOf2NearestMatcher>(false, ORB_MATCH_CONFIDENCE)
             : makePtr<detail::BestOf2NearestMatcher>(false, SURF_MATCH_CONFIDENCE);
@@ -78,33 +88,25 @@ OCL_PERF_TEST_P(stitch, b12, TEST_DETECTORS)
 
     while(next())
     {
-        Ptr<Stitcher> stitcher = Stitcher::create();
-        stitcher->setFeaturesFinder(featuresFinder);
-        stitcher->setFeaturesMatcher(featuresMatcher);
-        stitcher->setWarper(makePtr<SphericalWarper>());
-        stitcher->setRegistrationResol(WORK_MEGAPIX);
+        Stitcher stitcher = Stitcher::createDefault();
+        stitcher.setFeaturesFinder(featuresFinder);
+        stitcher.setFeaturesMatcher(featuresMatcher);
+        stitcher.setWarper(makePtr<SphericalWarper>());
+        stitcher.setRegistrationResol(WORK_MEGAPIX);
 
         startTimer();
-        stitcher->stitch(imgs, pano);
+        stitcher.stitch(imgs, pano);
         stopTimer();
     }
 
-    EXPECT_NEAR(pano.size().width, 1124, GetParam() == "surf" ? 100 : 50);
-    EXPECT_NEAR(pano.size().height, 644, GetParam() == "surf" ? 60 : 30);
+    EXPECT_NEAR(pano.size().width, 1124, 50);
+    EXPECT_NEAR(pano.size().height, 644, 30);
 
     SANITY_CHECK_NOTHING();
 }
 
 OCL_PERF_TEST_P(stitch, boat, TEST_DETECTORS)
 {
-    Size expected_dst_size(10789, 2663);
-    checkDeviceMaxMemoryAllocSize(expected_dst_size, CV_16SC3, 4);
-
-#if defined(_WIN32) && !defined(_WIN64)
-    if (cv::ocl::useOpenCL())
-        throw ::perf::TestBase::PerfSkipTestException();
-#endif
-
     UMat pano;
 
     vector<Mat> _imgs;
@@ -116,7 +118,10 @@ OCL_PERF_TEST_P(stitch, boat, TEST_DETECTORS)
     _imgs.push_back( imread( getDataPath("stitching/boat6.jpg") ) );
     vector<UMat> imgs = ToUMat(_imgs);
 
-    Ptr<Feature2D> featuresFinder = getFeatureFinder(GetParam());
+    Ptr<detail::FeaturesFinder> featuresFinder = GetParam() == "orb"
+            ? Ptr<detail::FeaturesFinder>(new detail::OrbFeaturesFinder())
+            : Ptr<detail::FeaturesFinder>(new detail::SurfFeaturesFinder());
+
     Ptr<detail::FeaturesMatcher> featuresMatcher = GetParam() == "orb"
             ? makePtr<detail::BestOf2NearestMatcher>(false, ORB_MATCH_CONFIDENCE)
             : makePtr<detail::BestOf2NearestMatcher>(false, SURF_MATCH_CONFIDENCE);
@@ -125,23 +130,23 @@ OCL_PERF_TEST_P(stitch, boat, TEST_DETECTORS)
 
     while(next())
     {
-        Ptr<Stitcher> stitcher = Stitcher::create();
-        stitcher->setFeaturesFinder(featuresFinder);
-        stitcher->setFeaturesMatcher(featuresMatcher);
-        stitcher->setWarper(makePtr<SphericalWarper>());
-        stitcher->setRegistrationResol(WORK_MEGAPIX);
+        Stitcher stitcher = Stitcher::createDefault();
+        stitcher.setFeaturesFinder(featuresFinder);
+        stitcher.setFeaturesMatcher(featuresMatcher);
+        stitcher.setWarper(makePtr<SphericalWarper>());
+        stitcher.setRegistrationResol(WORK_MEGAPIX);
 
         startTimer();
-        stitcher->stitch(imgs, pano);
+        stitcher.stitch(imgs, pano);
         stopTimer();
     }
 
-    EXPECT_NEAR(pano.size().width, expected_dst_size.width, 200);
-    EXPECT_NEAR(pano.size().height, expected_dst_size.height, 100);
+    EXPECT_NEAR(pano.size().width, 10789, 200);
+    EXPECT_NEAR(pano.size().height, 2663, 100);
 
     SANITY_CHECK_NOTHING();
 }
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

@@ -1,9 +1,10 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
+
+namespace cvtest
+{
 
 static Mat initDFTWave( int n, bool inv )
 {
@@ -204,7 +205,7 @@ static void DCT_1D( const Mat& _src, Mat& _dst, int flags, const Mat& _wave=Mat(
         }
     }
     else
-        CV_Assert(0);
+        assert(0);
 }
 
 
@@ -496,6 +497,9 @@ static void mulComplex( const Mat& src1, const Mat& src2, Mat& dst, int flags )
     }
 }
 
+}
+
+
 class CxCore_DXTBaseTest : public cvtest::ArrayTest
 {
 public:
@@ -657,7 +661,7 @@ int CxCore_DXTBaseTest::prepare_test_case( int test_case_idx )
         int out_type = test_mat[OUTPUT][0].type();
 
         if( CV_MAT_CN(in_type) == 2 && CV_MAT_CN(out_type) == 1 )
-            fixCCS( test_mat[INPUT][0], test_mat[OUTPUT][0].cols, flags );
+            cvtest::fixCCS( test_mat[INPUT][0], test_mat[OUTPUT][0].cols, flags );
 
         if( inplace )
             cvtest::copy( test_mat[INPUT][test_case_idx & (int)spectrum_mode],
@@ -714,22 +718,22 @@ void CxCore_DFTTest::prepare_to_validation( int /*test_case_idx*/ )
         if( !(flags & CV_DXT_INVERSE ) )
         {
             Mat& cvdft_dst = test_mat[TEMP][1];
-            convertFromCCS( cvdft_dst, cvdft_dst,
-                            test_mat[OUTPUT][0], flags );
+            cvtest::convertFromCCS( cvdft_dst, cvdft_dst,
+                               test_mat[OUTPUT][0], flags );
             *tmp_src = Scalar::all(0);
             cvtest::insert( src, *tmp_src, 0 );
         }
         else
         {
-            convertFromCCS( src, src, *tmp_src, flags );
+            cvtest::convertFromCCS( src, src, *tmp_src, flags );
             tmp_dst = &test_mat[TEMP][1];
         }
     }
 
     if( src.rows == 1 || (src.cols == 1 && !(flags & CV_DXT_ROWS)) )
-        DFT_1D( *tmp_src, *tmp_dst, flags );
+        cvtest::DFT_1D( *tmp_src, *tmp_dst, flags );
     else
-        DFT_2D( *tmp_src, *tmp_dst, flags );
+        cvtest::DFT_2D( *tmp_src, *tmp_dst, flags );
 
     if( tmp_dst != &dst )
         cvtest::extract( *tmp_dst, dst, 0 );
@@ -769,9 +773,9 @@ void CxCore_DCTTest::prepare_to_validation( int /*test_case_idx*/ )
     Mat& dst = test_mat[REF_OUTPUT][0];
 
     if( src.rows == 1 || (src.cols == 1 && !(flags & CV_DXT_ROWS)) )
-        DCT_1D( src, dst, flags );
+        cvtest::DCT_1D( src, dst, flags );
     else
-        DCT_2D( src, dst, flags );
+        cvtest::DCT_2D( src, dst, flags );
 }
 
 
@@ -793,7 +797,7 @@ CxCore_MulSpectrumsTest::CxCore_MulSpectrumsTest() : CxCore_DXTBaseTest( true, t
 
 double CxCore_MulSpectrumsTest::get_success_error_level( int test_case_idx, int i, int j )
 {
-    CV_UNUSED(test_case_idx);
+    (void)test_case_idx;
     CV_Assert(i == OUTPUT);
     CV_Assert(j == 0);
     int elem_depth = CV_MAT_DEPTH(cvGetElemType(test_array[i][j]));
@@ -833,17 +837,17 @@ void CxCore_MulSpectrumsTest::prepare_to_validation( int /*test_case_idx*/ )
 
     if( cn == 1 )
     {
-        convertFromCCS( *src1, *src1, dst, flags );
-        convertFromCCS( *src2, *src2, dst0, flags );
+        cvtest::convertFromCCS( *src1, *src1, dst, flags );
+        cvtest::convertFromCCS( *src2, *src2, dst0, flags );
         src1 = &dst;
         src2 = &dst0;
     }
 
-    mulComplex( *src1, *src2, dst0, flags );
+    cvtest::mulComplex( *src1, *src2, dst0, flags );
     if( cn == 1 )
     {
         Mat& temp = test_mat[TEMP][0];
-        convertFromCCS( temp, temp, dst, flags );
+        cvtest::convertFromCCS( temp, temp, dst, flags );
     }
 }
 
@@ -896,7 +900,7 @@ TEST(Core_DFT, complex_output2)
         Mat x(m, n, type), out;
         randu(x, -1., 1.);
         dft(x, out, DFT_ROWS | DFT_COMPLEX_OUTPUT);
-        double nrm = cvtest::norm(out, NORM_INF);
+        double nrm = norm(out, NORM_INF);
         double thresh = n*m*2;
         if( nrm > thresh )
         {
@@ -982,5 +986,3 @@ protected:
 
 TEST(Core_DFT, reverse) { Core_DXTReverseTest test(Core_DXTReverseTest::ModeDFT); test.safe_run(); }
 TEST(Core_DCT, reverse) { Core_DXTReverseTest test(Core_DXTReverseTest::ModeDCT); test.safe_run(); }
-
-}} // namespace

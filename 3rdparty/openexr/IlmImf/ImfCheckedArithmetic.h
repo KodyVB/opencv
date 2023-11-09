@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2009, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -43,16 +43,15 @@
 //-----------------------------------------------------------------------------
 
 #include <limits>
-#include "IexMathExc.h"
-#include "ImfNamespace.h"
+#include <IexMathExc.h>
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+namespace Imf {
 
 template <bool b> struct StaticAssertionFailed;
 template <> struct StaticAssertionFailed <true> {};
 
 #define IMF_STATIC_ASSERT(x) \
-    do {StaticAssertionFailed <x> staticAssertionFailed; ((void) staticAssertionFailed);} while (false)
+    do {StaticAssertionFailed <x> staticAssertionFailed;} while (false)
 
 
 template <class T>
@@ -67,7 +66,7 @@ uiMult (T a, T b)
                         std::numeric_limits<T>::is_integer);
 
     if (a > 0 && b > std::numeric_limits<T>::max() / a)
-        throw IEX_NAMESPACE::OverflowExc ("Integer multiplication overflow.");
+        throw Iex::OverflowExc ("Integer multiplication overflow.");
 
     return a * b;
 }
@@ -85,7 +84,7 @@ uiDiv (T a, T b)
                         std::numeric_limits<T>::is_integer);
 
     if (b == 0)
-        throw IEX_NAMESPACE::DivzeroExc ("Integer division by zero.");
+        throw Iex::DivzeroExc ("Integer division by zero.");
 
     return a / b;
 }
@@ -103,7 +102,7 @@ uiAdd (T a, T b)
                         std::numeric_limits<T>::is_integer);
 
     if (a > std::numeric_limits<T>::max() - b)
-        throw IEX_NAMESPACE::OverflowExc ("Integer addition overflow.");
+        throw Iex::OverflowExc ("Integer addition overflow.");
 
     return a + b;
 }
@@ -121,7 +120,7 @@ uiSub (T a, T b)
                         std::numeric_limits<T>::is_integer);
 
     if (a < b)
-        throw IEX_NAMESPACE::UnderflowExc ("Integer subtraction underflow.");
+        throw Iex::UnderflowExc ("Integer subtraction underflow.");
 
     return a - b;
 }
@@ -139,7 +138,7 @@ checkArraySize (T n, size_t s)
     //
     //      size_t (n) * s
     //
-    // would overflow, then throw an IEX_NAMESPACE::OverflowExc exception.
+    // would overflow, then throw an Iex::OverflowExc exception.
     // Otherwise return
     //
     //      size_t (n).
@@ -151,13 +150,12 @@ checkArraySize (T n, size_t s)
     IMF_STATIC_ASSERT (sizeof (T) <= sizeof (size_t));
 
     if (size_t (n) > std::numeric_limits<size_t>::max() / s)
-        throw IEX_NAMESPACE::OverflowExc ("Integer multiplication overflow.");
+        throw Iex::OverflowExc ("Integer multiplication overflow.");
 
     return size_t (n);
 }
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
-
+} // namespace Imf
 
 #endif

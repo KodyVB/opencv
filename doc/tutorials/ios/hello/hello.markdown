@@ -1,16 +1,6 @@
 OpenCV iOS Hello {#tutorial_hello}
 ================
 
-@tableofcontents
-
-@prev_tutorial{tutorial_ios_install}
-@next_tutorial{tutorial_image_manipulation}
-
-|    |    |
-| -: | :- |
-| Original author | Charu Hans |
-| Compatibility | OpenCV >= 3.0 |
-
 Goal
 ----
 
@@ -60,7 +50,7 @@ Now we will learn how to write a simple Hello World Application in Xcode using O
 Output
 ------
 
-![](images/ios_hello_output.png)
+![](images/output.png)
 
 Changes for XCode5+ and iOS8+
 -----------------------------

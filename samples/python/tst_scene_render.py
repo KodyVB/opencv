@@ -5,10 +5,9 @@
 from __future__ import print_function
 
 import numpy as np
-import cv2 as cv
-
 from numpy import pi, sin, cos
 
+import cv2
 
 defaultSize = 512
 
@@ -25,7 +24,7 @@ class TestSceneRender():
         if bgImg is not None:
             self.sceneBg = bgImg.copy()
         else:
-            self.sceneBg = np.zeros((defaultSize, defaultSize,3), np.uint8)
+            self.sceneBg = np.zeros(defaultSize, defaultSize, np.uint8)
 
         self.w = self.sceneBg.shape[0]
         self.h = self.sceneBg.shape[1]
@@ -85,10 +84,10 @@ class TestSceneRender():
             img[self.currentCenter[0]:self.currentCenter[0]+self.foreground.shape[0],
              self.currentCenter[1]:self.currentCenter[1]+self.foreground.shape[1]] = self.foreground
         else:
-            self.currentRect = self.initialRect + int( 30*cos(self.time*self.speed) + 50*sin(self.time*self.speed))
+            self.currentRect = self.initialRect + np.int( 30*cos(self.time*self.speed) + 50*sin(self.time*self.speed))
             if self.deformation:
-                self.currentRect[1:3] += int(self.h/20*cos(self.time))
-            cv.fillConvexPoly(img, self.currentRect, (0, 0, 255))
+                self.currentRect[1:3] += self.h/20*cos(self.time)
+            cv2.fillConvexPoly(img, self.currentRect, (0, 0, 255))
 
         self.time += self.timeStep
         return img
@@ -97,25 +96,21 @@ class TestSceneRender():
         self.time = 0.0
 
 
-def main():
-    backGr = cv.imread(cv.samples.findFile('graf1.png'))
-    fgr = cv.imread(cv.samples.findFile('box.png'))
+if __name__ == '__main__':
+
+    backGr = cv2.imread('../data/graf1.png')
+    fgr = cv2.imread('../data/box.png')
 
     render = TestSceneRender(backGr, fgr)
 
     while True:
 
         img = render.getNextFrame()
-        cv.imshow('img', img)
+        cv2.imshow('img', img)
 
-        ch = cv.waitKey(3)
+        ch = cv2.waitKey(3)
         if  ch == 27:
             break
-
-    print('Done')
-
-
-if __name__ == '__main__':
-    print(__doc__)
-    main()
-    cv.destroyAllWindows()
+    #import os
+    #print (os.environ['PYTHONPATH'])
+    cv2.destroyAllWindows()

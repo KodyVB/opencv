@@ -1,12 +1,14 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 CV_ENUM(MotionType, MOTION_TRANSLATION, MOTION_EUCLIDEAN, MOTION_AFFINE, MOTION_HOMOGRAPHY)
 
-typedef tuple<MotionType> MotionType_t;
+typedef std::tr1::tuple<MotionType> MotionType_t;
 typedef perf::TestBaseWithParam<MotionType_t> TransformationType;
 
 
@@ -67,5 +69,3 @@ PERF_TEST_P(TransformationType, findTransformECC, /*testing::ValuesIn(MotionType
     }
     SANITY_CHECK(warpMat, 3e-3);
 }
-
-} // namespace

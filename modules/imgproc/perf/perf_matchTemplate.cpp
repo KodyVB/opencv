@@ -1,13 +1,14 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-namespace opencv_test {
+using namespace std;
+using namespace cv;
+using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 CV_ENUM(MethodType, TM_SQDIFF, TM_SQDIFF_NORMED, TM_CCORR, TM_CCORR_NORMED, TM_CCOEFF, TM_CCOEFF_NORMED)
 
-typedef tuple<Size, Size, MethodType> ImgSize_TmplSize_Method_t;
+typedef std::tr1::tuple<Size, Size, MethodType> ImgSize_TmplSize_Method_t;
 typedef perf::TestBaseWithParam<ImgSize_TmplSize_Method_t> ImgSize_TmplSize_Method;
 
 PERF_TEST_P(ImgSize_TmplSize_Method, matchTemplateSmall,
@@ -80,5 +81,3 @@ PERF_TEST_P(ImgSize_TmplSize_Method, matchTemplateBig,
 
     SANITY_CHECK(result, eps);
 }
-
-} // namespace

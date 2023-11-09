@@ -1,7 +1,6 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/videoio.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
+#include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>      //for imshow
 #include <vector>
 #include <iostream>
@@ -63,11 +62,8 @@ void Tracker::setFirstFrame(const Mat frame, vector<Point2f> bb, string title, S
 
 Mat Tracker::process(const Mat frame, Stats& stats)
 {
-    TickMeter tm;
     vector<KeyPoint> kp;
     Mat desc;
-
-    tm.start();
     detector->detectAndCompute(frame, noArray(), kp, desc);
     stats.keypoints = (int)kp.size();
 
@@ -89,8 +85,6 @@ Mat Tracker::process(const Mat frame, Stats& stats)
         homography = findHomography(Points(matched1), Points(matched2),
                                     RANSAC, ransac_thresh, inlier_mask);
     }
-    tm.stop();
-    stats.fps = 1. / tm.getTimeSec();
 
     if(matched1.size() < 4 || homography.empty()) {
         Mat res;
@@ -126,24 +120,27 @@ Mat Tracker::process(const Mat frame, Stats& stats)
 
 int main(int argc, char **argv)
 {
-    CommandLineParser parser(argc, argv, "{@input_path |0|input path can be a camera id, like 0,1,2 or a video filename}");
-    parser.printMessage();
-    string input_path = parser.get<string>(0);
-    string video_name = input_path;
+    if(argc < 2) {
+        cerr << "Usage: " << endl
+             << "akaze_track input_path" << endl
+             << "  (input_path can be a camera id, like 0,1,2 or a video filename)" << endl;
+        return 1;
+    }
+
+    std::string video_name = argv[1];
+    std::stringstream ssFormat;
+    ssFormat << atoi(argv[1]);
 
     VideoCapture video_in;
-
-    if ( ( isdigit(input_path[0]) && input_path.size() == 1 ) )
-    {
-    int camera_no = input_path[0] - '0';
-        video_in.open( camera_no );
+    if (video_name.compare(ssFormat.str())==0) {    //test str==str(num)
+        video_in.open(atoi(argv[1]));
     }
     else {
         video_in.open(video_name);
     }
 
     if(!video_in.isOpened()) {
-        cerr << "Couldn't open " << video_name << endl;
+        cerr << "Couldn't open " << argv[1] << endl;
         return 1;
     }
 
@@ -156,18 +153,13 @@ int main(int argc, char **argv)
     example::Tracker orb_tracker(orb, matcher);
 
     Mat frame;
+    video_in >> frame;
     namedWindow(video_name, WINDOW_NORMAL);
-    cout << "\nPress any key to stop the video and select a bounding box" << endl;
+    cv::resizeWindow(video_name, frame.cols, frame.rows);
 
-    while ( waitKey(1) < 1 )
-    {
-        video_in >> frame;
-        cv::resizeWindow(video_name, frame.size());
-        imshow(video_name, frame);
-    }
-
+    cout << "Please select a bounding box, and press any key to continue." << endl;
     vector<Point2f> bb;
-    cv::Rect uBox = cv::selectROI(video_name, frame);
+    cv::Rect2d uBox = selectROI(video_name, frame);
     bb.push_back(cv::Point2f(static_cast<float>(uBox.x), static_cast<float>(uBox.y)));
     bb.push_back(cv::Point2f(static_cast<float>(uBox.x+uBox.width), static_cast<float>(uBox.y)));
     bb.push_back(cv::Point2f(static_cast<float>(uBox.x+uBox.width), static_cast<float>(uBox.y+uBox.height)));

@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -36,16 +36,15 @@
 //-----------------------------------------------------------------------------
 //
 //	class TimeCode
-// 	
+//
 //-----------------------------------------------------------------------------
 
 #include <ImfTimeCode.h>
 #include "Iex.h"
-#include "ImfNamespace.h"
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_ENTER
+namespace Imf {
 
-   
+
 TimeCode::TimeCode ()
 {
     _time = 0;
@@ -119,21 +118,6 @@ TimeCode::operator = (const TimeCode &other)
     return *this;
 }
 
-    
-bool
-TimeCode::operator == (const TimeCode & c) const
-{
-    return (_time == c._time && _user == c._user);
-}
-
-
-bool
-TimeCode::operator != (const TimeCode & c) const
-{
-    return (_time != c._time || _user != c._user);
-}
-    
-    
 
 namespace {
 
@@ -185,8 +169,8 @@ void
 TimeCode::setHours (int value)
 {
     if (value < 0 || value > 23)
-	throw IEX_NAMESPACE::ArgExc ("Cannot set hours field in time code. "
-			   "New value is out of range.");
+    throw Iex::ArgExc ("Cannot set hours field in time code. "
+               "New value is out of range.");
 
     setBitField (_time, 24, 29, binaryToBcd (value));
 }
@@ -203,8 +187,8 @@ void
 TimeCode::setMinutes (int value)
 {
     if (value < 0 || value > 59)
-	throw IEX_NAMESPACE::ArgExc ("Cannot set minutes field in time code. "
-			   "New value is out of range.");
+    throw Iex::ArgExc ("Cannot set minutes field in time code. "
+               "New value is out of range.");
 
     setBitField (_time, 16, 22, binaryToBcd (value));
 }
@@ -221,8 +205,8 @@ void
 TimeCode::setSeconds (int value)
 {
     if (value < 0 || value > 59)
-	throw IEX_NAMESPACE::ArgExc ("Cannot set seconds field in time code. "
-			   "New value is out of range.");
+    throw Iex::ArgExc ("Cannot set seconds field in time code. "
+               "New value is out of range.");
 
     setBitField (_time, 8, 14, binaryToBcd (value));
 }
@@ -239,8 +223,8 @@ void
 TimeCode::setFrame (int value)
 {
     if (value < 0 || value > 59)
-	throw IEX_NAMESPACE::ArgExc ("Cannot set frame field in time code. "
-			   "New value is out of range.");
+    throw Iex::ArgExc ("Cannot set frame field in time code. "
+               "New value is out of range.");
 
     setBitField (_time, 0, 5, binaryToBcd (value));
 }
@@ -249,7 +233,7 @@ TimeCode::setFrame (int value)
 bool
 TimeCode::dropFrame () const
 {
-    return !!bitField (_time, 6, 6);
+    return bool (bitField (_time, 6, 6));
 }
 
 
@@ -263,7 +247,7 @@ TimeCode::setDropFrame (bool value)
 bool
 TimeCode::colorFrame () const
 {
-    return !!bitField (_time, 7, 7);
+    return bool (bitField (_time, 7, 7));
 }
 
 
@@ -277,7 +261,7 @@ TimeCode::setColorFrame (bool value)
 bool
 TimeCode::fieldPhase () const
 {
-    return !!bitField (_time, 15, 15);
+    return bool (bitField (_time, 15, 15));
 }
 
 
@@ -291,7 +275,7 @@ TimeCode::setFieldPhase (bool value)
 bool
 TimeCode::bgf0 () const
 {
-    return !!bitField (_time, 23, 23);
+    return bool (bitField (_time, 23, 23));
 }
 
 
@@ -305,7 +289,7 @@ TimeCode::setBgf0 (bool value)
 bool
 TimeCode::bgf1 () const
 {
-    return!!bitField (_time, 30, 30);
+    return bool (bitField (_time, 30, 30));
 }
 
 
@@ -319,7 +303,7 @@ TimeCode::setBgf1 (bool value)
 bool
 TimeCode::bgf2 () const
 {
-    return !!bitField (_time, 31, 31);
+    return bool (bitField (_time, 31, 31));
 }
 
 
@@ -334,8 +318,8 @@ int
 TimeCode::binaryGroup (int group) const
 {
     if (group < 1 || group > 8)
-	throw IEX_NAMESPACE::ArgExc ("Cannot extract binary group from time code "
-		           "user data.  Group number is out of range.");
+    throw Iex::ArgExc ("Cannot extract binary group from time code "
+                   "user data.  Group number is out of range.");
 
     int minBit = 4 * (group - 1);
     int maxBit = minBit + 3;
@@ -347,8 +331,8 @@ void
 TimeCode::setBinaryGroup (int group, int value)
 {
     if (group < 1 || group > 8)
-	throw IEX_NAMESPACE::ArgExc ("Cannot extract binary group from time code "
-		           "user data.  Group number is out of range.");
+    throw Iex::ArgExc ("Cannot extract binary group from time code "
+                   "user data.  Group number is out of range.");
 
     int minBit = 4 * (group - 1);
     int maxBit = minBit + 3;
@@ -361,24 +345,24 @@ TimeCode::timeAndFlags (Packing packing) const
 {
     if (packing == TV50_PACKING)
     {
-	unsigned int t = _time;
+    unsigned int t = _time;
 
-	t &= ~((1 << 6) | (1 << 15) | (1 << 23) | (1 << 30) | (1 << 31));
+    t &= ~((1 << 6) | (1 << 15) | (1 << 23) | (1 << 30) | (1 << 31));
 
-	t |= ((unsigned int) bgf0() << 15);
-	t |= ((unsigned int) bgf2() << 23);
-	t |= ((unsigned int) bgf1() << 30);
-	t |= ((unsigned int) fieldPhase() << 31);
+    t |= ((unsigned int) bgf0() << 15);
+    t |= ((unsigned int) bgf2() << 23);
+    t |= ((unsigned int) bgf1() << 30);
+    t |= ((unsigned int) fieldPhase() << 31);
 
-	return t;
+    return t;
     }
     if (packing == FILM24_PACKING)
     {
-	return _time & ~((1 << 6) | (1 << 7));
+    return _time & ~((1 << 6) | (1 << 7));
     }
     else // packing == TV60_PACKING
     {
-	return _time;
+    return _time;
     }
 }
 
@@ -388,28 +372,28 @@ TimeCode::setTimeAndFlags (unsigned int value, Packing packing)
 {
     if (packing == TV50_PACKING)
     {
-	_time = value &
-		 ~((1 << 6) | (1 << 15) | (1 << 23) | (1 << 30) | (1 << 31));
+    _time = value &
+         ~((1 << 6) | (1 << 15) | (1 << 23) | (1 << 30) | (1 << 31));
 
-	if (value & (1 << 15))
-	    setBgf0 (true);
+    if (value & (1 << 15))
+        setBgf0 (true);
 
-	if (value & (1 << 23))
-	    setBgf2 (true);
+    if (value & (1 << 23))
+        setBgf2 (true);
 
-	if (value & (1 << 30))
-	    setBgf1 (true);
+    if (value & (1 << 30))
+        setBgf1 (true);
 
-	if (value & (1 << 31))
-	    setFieldPhase (true);
+    if (value & (1 << 31))
+        setFieldPhase (true);
     }
     else if (packing == FILM24_PACKING)
     {
-	_time = value & ~((1 << 6) | (1 << 7));
+    _time = value & ~((1 << 6) | (1 << 7));
     }
     else // packing == TV60_PACKING
     {
-	_time = value;
+    _time = value;
     }
 }
 
@@ -428,4 +412,4 @@ TimeCode::setUserData (unsigned int value)
 }
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_EXIT
+} // namespace Imf

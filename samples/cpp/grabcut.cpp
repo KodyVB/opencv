@@ -7,25 +7,25 @@
 using namespace std;
 using namespace cv;
 
-static void help(char** argv)
+static void help()
 {
     cout << "\nThis program demonstrates GrabCut segmentation -- select an object in a region\n"
             "and then grabcut will attempt to segment it out.\n"
             "Call:\n"
-        <<  argv[0] << " <image_name>\n"
-            "\nSelect a rectangular area around the object you want to segment\n" <<
-            "\nHot keys: \n"
-            "\tESC - quit the program\n"
-            "\tr - restore the original image\n"
-            "\tn - next iteration\n"
-            "\n"
-            "\tleft mouse button - set rectangle\n"
-            "\n"
-            "\tCTRL+left mouse button - set GC_BGD pixels\n"
-            "\tSHIFT+left mouse button - set GC_FGD pixels\n"
-            "\n"
-            "\tCTRL+right mouse button - set GC_PR_BGD pixels\n"
-            "\tSHIFT+right mouse button - set GC_PR_FGD pixels\n" << endl;
+            "./grabcut <image_name>\n"
+        "\nSelect a rectangular area around the object you want to segment\n" <<
+        "\nHot keys: \n"
+        "\tESC - quit the program\n"
+        "\tr - restore the original image\n"
+        "\tn - next iteration\n"
+        "\n"
+        "\tleft mouse button - set rectangle\n"
+        "\n"
+        "\tCTRL+left mouse button - set GC_BGD pixels\n"
+        "\tSHIFT+left mouse button - set GC_FGD pixels\n"
+        "\n"
+        "\tCTRL+right mouse button - set GC_PR_BGD pixels\n"
+        "\tSHIFT+right mouse button - set GC_PR_FGD pixels\n" << endl;
 }
 
 const Scalar RED = Scalar(0,0,255);
@@ -107,14 +107,12 @@ void GCApplication::showImage() const
 
     Mat res;
     Mat binMask;
-    image->copyTo( res );
-    if( isInitialized ){
-        getBinMask( mask, binMask);
-
-        Mat black (binMask.rows, binMask.cols, CV_8UC3, cv::Scalar(0,0,0));
-        black.setTo(Scalar::all(255), binMask);
-
-        addWeighted(black, 0.5, res, 0.5, 0.0, res);
+    if( !isInitialized )
+        image->copyTo( res );
+    else
+    {
+        getBinMask( mask, binMask );
+        image->copyTo( res, binMask );
     }
 
     vector<Point>::const_iterator it;
@@ -203,29 +201,17 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
     case EVENT_LBUTTONUP:
         if( rectState == IN_PROCESS )
         {
-            if(rect.x == x || rect.y == y){
-                rectState = NOT_SET;
-            }
-            else{
-                rect = Rect( Point(rect.x, rect.y), Point(x,y) );
-                rectState = SET;
-                setRectInMask();
-                CV_Assert( bgdPxls.empty() && fgdPxls.empty() && prBgdPxls.empty() && prFgdPxls.empty() );
-            }
+            rect = Rect( Point(rect.x, rect.y), Point(x,y) );
+            rectState = SET;
+            setRectInMask();
+            CV_Assert( bgdPxls.empty() && fgdPxls.empty() && prBgdPxls.empty() && prFgdPxls.empty() );
             showImage();
         }
         if( lblsState == IN_PROCESS )
         {
             setLblsInMask(flags, Point(x,y), false);
             lblsState = SET;
-            nextIter();
             showImage();
-        }
-        else{
-            if(rectState == SET){
-                nextIter();
-                showImage();
-            }
         }
         break;
     case EVENT_RBUTTONUP:
@@ -233,9 +219,6 @@ void GCApplication::mouseClick( int event, int x, int y, int flags, void* )
         {
             setLblsInMask(flags, Point(x,y), true);
             prLblsState = SET;
-        }
-        if(rectState == SET){
-            nextIter();
             showImage();
         }
         break;
@@ -293,21 +276,26 @@ static void on_mouse( int event, int x, int y, int flags, void* param )
 
 int main( int argc, char** argv )
 {
-    cv::CommandLineParser parser(argc, argv, "{@input| messi5.jpg |}");
-    help(argv);
-
+    cv::CommandLineParser parser(argc, argv, "{help h||}{@input||}");
+    if (parser.has("help"))
+    {
+        help();
+        return 0;
+    }
     string filename = parser.get<string>("@input");
     if( filename.empty() )
     {
         cout << "\nDurn, empty filename" << endl;
         return 1;
     }
-    Mat image = imread(samples::findFile(filename), IMREAD_COLOR);
+    Mat image = imread( filename, 1 );
     if( image.empty() )
     {
         cout << "\n Durn, couldn't read image filename " << filename << endl;
         return 1;
     }
+
+    help();
 
     const string winName = "image";
     namedWindow( winName, WINDOW_AUTOSIZE );

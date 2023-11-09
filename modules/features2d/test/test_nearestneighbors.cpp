@@ -43,11 +43,13 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+#include <algorithm>
+#include <vector>
+#include <iostream>
 
-#ifdef HAVE_OPENCV_FLANN
+using namespace std;
+using namespace cv;
 using namespace cv::flann;
-#endif
 
 //--------------------------------------------------------------------------------
 class NearestNeighborTest : public cvtest::BaseTest
@@ -112,7 +114,11 @@ int NearestNeighborTest::checkFind( const Mat& data )
         }
 
         double correctPerc = correctMatches / (double)pointsCount;
-        EXPECT_GE(correctPerc, .75) << "correctMatches=" << correctMatches << " pointsCount=" << pointsCount;
+        if (correctPerc < .75)
+        {
+            ts->printf( cvtest::TS::LOG, "correct_perc = %d\n", correctPerc );
+            code = cvtest::TS::FAIL_BAD_ACCURACY;
+        }
     }
 
     return code;
@@ -123,7 +129,7 @@ void NearestNeighborTest::run( int /*start_from*/ ) {
     Mat desc( featuresCount, dims, CV_32FC1 );
     ts->get_rng().fill( desc, RNG::UNIFORM, minValue, maxValue );
 
-    createModel( desc.clone() );  // .clone() is used to simulate dangling pointers problem: https://github.com/opencv/opencv/issues/17553
+    createModel( desc );
 
     tempCode = checkGetPoints( desc );
     if( tempCode != cvtest::TS::OK )
@@ -148,13 +154,10 @@ void NearestNeighborTest::run( int /*start_from*/ ) {
 
     releaseModel();
 
-    if (::testing::Test::HasFailure()) code = cvtest::TS::FAIL_BAD_ACCURACY;
     ts->set_failed_test_info( code );
 }
 
 //--------------------------------------------------------------------------------
-#ifdef HAVE_OPENCV_FLANN
-
 class CV_FlannTest : public NearestNeighborTest
 {
 public:
@@ -198,9 +201,10 @@ int CV_FlannTest::knnSearch( Mat& points, Mat& neighbors )
     }
 
     // compare results
-    EXPECT_LE(cvtest::norm(neighbors, neighbors1, NORM_L1), 0);
+    if( cvtest::norm( neighbors, neighbors1, NORM_L1 ) != 0 )
+        return cvtest::TS::FAIL_BAD_ACCURACY;
 
-    return ::testing::Test::HasFailure() ? cvtest::TS::FAIL_BAD_ACCURACY : cvtest::TS::OK;
+    return cvtest::TS::OK;
 }
 
 int CV_FlannTest::radiusSearch( Mat& points, Mat& neighbors )
@@ -228,11 +232,11 @@ int CV_FlannTest::radiusSearch( Mat& points, Mat& neighbors )
         for( j = 0; it != indices.end(); ++it, j++ )
             neighbors1.at<int>(i,j) = *it;
     }
-
     // compare results
-    EXPECT_LE(cvtest::norm(neighbors, neighbors1, NORM_L1), 0);
+    if( cvtest::norm( neighbors, neighbors1, NORM_L1 ) != 0 )
+        return cvtest::TS::FAIL_BAD_ACCURACY;
 
-    return ::testing::Test::HasFailure() ? cvtest::TS::FAIL_BAD_ACCURACY : cvtest::TS::OK;
+    return cvtest::TS::OK;
 }
 
 void CV_FlannTest::releaseModel()
@@ -312,7 +316,7 @@ void CV_FlannSavedIndexTest::createModel(const cv::Mat &data)
         case 1: createIndex( data, KDTreeIndexParams() ); break;
         //case 2: createIndex( data, CompositeIndexParams() ); break; // nothing to save for linear search
         //case 2: createIndex( data, AutotunedIndexParams() ); break; // possible linear index !
-        default: CV_Assert(0);
+        default: assert(0);
     }
     string filename = tempfile();
     index->save( filename );
@@ -327,7 +331,3 @@ TEST(Features2d_FLANN_KDTree, regression) { CV_FlannKDTreeIndexTest test; test.s
 TEST(Features2d_FLANN_Composite, regression) { CV_FlannCompositeIndexTest test; test.safe_run(); }
 TEST(Features2d_FLANN_Auto, regression) { CV_FlannAutotunedIndexTest test; test.safe_run(); }
 TEST(Features2d_FLANN_Saved, regression) { CV_FlannSavedIndexTest test; test.safe_run(); }
-
-#endif
-
-}} // namespace

@@ -1,8 +1,10 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 PERF_TEST_P(Size_MatType, minMaxLoc, testing::Combine(
                  testing::Values(TYPICAL_MAT_SIZES),
@@ -31,5 +33,3 @@ PERF_TEST_P(Size_MatType, minMaxLoc, testing::Combine(
     SANITY_CHECK(minVal, 1e-12);
     SANITY_CHECK(maxVal, 1e-12);
 }
-
-} // namespace

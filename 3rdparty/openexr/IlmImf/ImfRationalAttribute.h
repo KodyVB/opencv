@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -41,29 +41,30 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "ImfAttribute.h"
-#include "ImfRational.h"
-
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+#include <ImfAttribute.h>
+#include <ImfRational.h>
 
 
-typedef TypedAttribute<OPENEXR_IMF_INTERNAL_NAMESPACE::Rational> RationalAttribute;
+namespace Imf {
+
+
+typedef TypedAttribute<Rational> RationalAttribute;
 
 template <>
-IMF_EXPORT
 const char *RationalAttribute::staticTypeName ();
 
 template <>
-IMF_EXPORT
-void RationalAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &,
-                                      int) const;
+void RationalAttribute::writeValueTo (OStream &, int) const;
 
 template <>
-IMF_EXPORT
-void RationalAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &,
-                                       int, int);
+void RationalAttribute::readValueFrom (IStream &, int, int);
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
+} // namespace Imf
+
+// Metrowerks compiler wants the .cpp file inlined, too
+#ifdef __MWERKS__
+#include <ImfRationalAttribute.cpp>
+#endif
 
 #endif

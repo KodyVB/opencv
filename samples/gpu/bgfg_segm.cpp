@@ -4,6 +4,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/cudabgsegm.hpp"
+#include "opencv2/cudalegacy.hpp"
 #include "opencv2/video.hpp"
 #include "opencv2/highgui.hpp"
 
@@ -15,6 +16,8 @@ enum Method
 {
     MOG,
     MOG2,
+    GMG,
+    FGD_STAT
 };
 
 int main(int argc, const char** argv)
@@ -22,7 +25,7 @@ int main(int argc, const char** argv)
     cv::CommandLineParser cmd(argc, argv,
         "{ c camera |                    | use camera }"
         "{ f file   | ../data/vtest.avi  | input video file }"
-        "{ m method | mog                | method (mog, mog2) }"
+        "{ m method | mog                | method (mog, mog2, gmg, fgd) }"
         "{ h help   |                    | print help message }");
 
     if (cmd.has("help") || !cmd.check())
@@ -37,7 +40,9 @@ int main(int argc, const char** argv)
     string method = cmd.get<string>("method");
 
     if (method != "mog"
-        && method != "mog2")
+        && method != "mog2"
+        && method != "gmg"
+        && method != "fgd")
     {
         cerr << "Incorrect method" << endl;
         return -1;
@@ -45,8 +50,8 @@ int main(int argc, const char** argv)
 
     Method m = method == "mog" ? MOG :
                method == "mog2" ? MOG2 :
-                                  (Method)-1;
-    CV_Assert(m != (Method)-1);
+               method == "fgd" ? FGD_STAT :
+                                  GMG;
 
     VideoCapture cap;
 
@@ -68,6 +73,8 @@ int main(int argc, const char** argv)
 
     Ptr<BackgroundSubtractor> mog = cuda::createBackgroundSubtractorMOG();
     Ptr<BackgroundSubtractor> mog2 = cuda::createBackgroundSubtractorMOG2();
+    Ptr<BackgroundSubtractor> gmg = cuda::createBackgroundSubtractorGMG(40);
+    Ptr<BackgroundSubtractor> fgd = cuda::createBackgroundSubtractorFGD();
 
     GpuMat d_fgmask;
     GpuMat d_fgimg;
@@ -86,12 +93,23 @@ int main(int argc, const char** argv)
     case MOG2:
         mog2->apply(d_frame, d_fgmask);
         break;
+
+    case GMG:
+        gmg->apply(d_frame, d_fgmask);
+        break;
+
+    case FGD_STAT:
+        fgd->apply(d_frame, d_fgmask);
+        break;
     }
 
     namedWindow("image", WINDOW_NORMAL);
     namedWindow("foreground mask", WINDOW_NORMAL);
     namedWindow("foreground image", WINDOW_NORMAL);
-    namedWindow("mean background image", WINDOW_NORMAL);
+    if (m != GMG)
+    {
+        namedWindow("mean background image", WINDOW_NORMAL);
+    }
 
     for(;;)
     {
@@ -113,6 +131,15 @@ int main(int argc, const char** argv)
         case MOG2:
             mog2->apply(d_frame, d_fgmask);
             mog2->getBackgroundImage(d_bgimg);
+            break;
+
+        case GMG:
+            gmg->apply(d_frame, d_fgmask);
+            break;
+
+        case FGD_STAT:
+            fgd->apply(d_frame, d_fgmask);
+            fgd->getBackgroundImage(d_bgimg);
             break;
         }
 

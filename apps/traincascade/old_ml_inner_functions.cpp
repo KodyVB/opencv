@@ -60,60 +60,206 @@ void CvStatModel::clear()
 
 void CvStatModel::save( const char* filename, const char* name ) const
 {
-    cv::FileStorage fs;
+    CvFileStorage* fs = 0;
 
     CV_FUNCNAME( "CvStatModel::save" );
 
     __BEGIN__;
 
-    if( !fs.open( filename, cv::FileStorage::WRITE ))
+    CV_CALL( fs = cvOpenFileStorage( filename, 0, CV_STORAGE_WRITE ));
+    if( !fs )
         CV_ERROR( CV_StsError, "Could not open the file storage. Check the path and permissions" );
 
     write( fs, name ? name : default_model_name );
 
     __END__;
 
+    cvReleaseFileStorage( &fs );
 }
 
 
 void CvStatModel::load( const char* filename, const char* name )
 {
-    cv::FileStorage fs;
+    CvFileStorage* fs = 0;
 
-    CV_FUNCNAME( "CvStatModel::load" );
+    CV_FUNCNAME( "CvAlgorithm::load" );
 
     __BEGIN__;
 
-    cv::FileNode model_node;
+    CvFileNode* model_node = 0;
 
-    if( !fs.open(filename, cv::FileStorage::READ) )
-        CV_ERROR( CV_StsError, "Could not open the file storage. Check the path and permissions" );
+    CV_CALL( fs = cvOpenFileStorage( filename, 0, CV_STORAGE_READ ));
+    if( !fs )
+        EXIT;
 
     if( name )
-        model_node = fs[ name ];
+        model_node = cvGetFileNodeByName( fs, 0, name );
     else
     {
-        auto root = fs.root();
-        if ( root.size() > 0 )
-            model_node = fs[0];
+        CvFileNode* root = cvGetRootFileNode( fs );
+        if( root->data.seq->total > 0 )
+            model_node = (CvFileNode*)cvGetSeqElem( root->data.seq, 0 );
     }
 
-    read( model_node );
+    read( fs, model_node );
 
     __END__;
 
+    cvReleaseFileStorage( &fs );
 }
 
 
-void CvStatModel::write( cv::FileStorage&, const char* ) const
+void CvStatModel::write( CvFileStorage*, const char* ) const
 {
     OPENCV_ERROR( CV_StsNotImplemented, "CvStatModel::write", "" );
 }
 
-void CvStatModel::read( const cv::FileNode& )
+
+void CvStatModel::read( CvFileStorage*, CvFileNode* )
 {
     OPENCV_ERROR( CV_StsNotImplemented, "CvStatModel::read", "" );
 }
+
+
+/* Calculates upper triangular matrix S, where A is a symmetrical matrix A=S'*S */
+static void cvChol( CvMat* A, CvMat* S )
+{
+    int dim = A->rows;
+
+    int i, j, k;
+    float sum;
+
+    for( i = 0; i < dim; i++ )
+    {
+        for( j = 0; j < i; j++ )
+            CV_MAT_ELEM(*S, float, i, j) = 0;
+
+        sum = 0;
+        for( k = 0; k < i; k++ )
+            sum += CV_MAT_ELEM(*S, float, k, i) * CV_MAT_ELEM(*S, float, k, i);
+
+        CV_MAT_ELEM(*S, float, i, i) = (float)sqrt(CV_MAT_ELEM(*A, float, i, i) - sum);
+
+        for( j = i + 1; j < dim; j++ )
+        {
+            sum = 0;
+            for( k = 0; k < i; k++ )
+                sum += CV_MAT_ELEM(*S, float, k, i) * CV_MAT_ELEM(*S, float, k, j);
+
+            CV_MAT_ELEM(*S, float, i, j) =
+                (CV_MAT_ELEM(*A, float, i, j) - sum) / CV_MAT_ELEM(*S, float, i, i);
+
+        }
+    }
+}
+
+/* Generates <sample> from multivariate normal distribution, where <mean> - is an
+   average row vector, <cov> - symmetric covariation matrix */
+CV_IMPL void cvRandMVNormal( CvMat* mean, CvMat* cov, CvMat* sample, CvRNG* rng )
+{
+    int dim = sample->cols;
+    int amount = sample->rows;
+
+    CvRNG state = rng ? *rng : cvRNG( cvGetTickCount() );
+    cvRandArr(&state, sample, CV_RAND_NORMAL, cvScalarAll(0), cvScalarAll(1) );
+
+    CvMat* utmat = cvCreateMat(dim, dim, sample->type);
+    CvMat* vect = cvCreateMatHeader(1, dim, sample->type);
+
+    cvChol(cov, utmat);
+
+    int i;
+    for( i = 0; i < amount; i++ )
+    {
+        cvGetRow(sample, vect, i);
+        cvMatMulAdd(vect, utmat, mean, vect);
+    }
+
+    cvReleaseMat(&vect);
+    cvReleaseMat(&utmat);
+}
+
+
+/* Generates <sample> of <amount> points from a discrete variate xi,
+   where Pr{xi = k} == probs[k], 0 < k < len - 1. */
+static void cvRandSeries( float probs[], int len, int sample[], int amount )
+{
+    CvMat* univals = cvCreateMat(1, amount, CV_32FC1);
+    float* knots = (float*)cvAlloc( len * sizeof(float) );
+
+    int i, j;
+
+    CvRNG state = cvRNG(-1);
+    cvRandArr(&state, univals, CV_RAND_UNI, cvScalarAll(0), cvScalarAll(1) );
+
+    knots[0] = probs[0];
+    for( i = 1; i < len; i++ )
+        knots[i] = knots[i - 1] + probs[i];
+
+    for( i = 0; i < amount; i++ )
+        for( j = 0; j < len; j++ )
+        {
+            if ( CV_MAT_ELEM(*univals, float, 0, i) <= knots[j] )
+            {
+                sample[i] = j;
+                break;
+            }
+        }
+
+    cvFree(&knots);
+}
+
+/* Generates <sample> from gaussian mixture distribution */
+CV_IMPL void cvRandGaussMixture( CvMat* means[],
+                                 CvMat* covs[],
+                                 float weights[],
+                                 int clsnum,
+                                 CvMat* sample,
+                                 CvMat* sampClasses )
+{
+    int dim = sample->cols;
+    int amount = sample->rows;
+
+    int i, clss;
+
+    int* sample_clsnum = (int*)cvAlloc( amount * sizeof(int) );
+    CvMat** utmats = (CvMat**)cvAlloc( clsnum * sizeof(CvMat*) );
+    CvMat* vect = cvCreateMatHeader(1, dim, CV_32FC1);
+
+    CvMat* classes;
+    if( sampClasses )
+        classes = sampClasses;
+    else
+        classes = cvCreateMat(1, amount, CV_32FC1);
+
+    CvRNG state = cvRNG(-1);
+    cvRandArr(&state, sample, CV_RAND_NORMAL, cvScalarAll(0), cvScalarAll(1));
+
+    cvRandSeries(weights, clsnum, sample_clsnum, amount);
+
+    for( i = 0; i < clsnum; i++ )
+    {
+        utmats[i] = cvCreateMat(dim, dim, CV_32FC1);
+        cvChol(covs[i], utmats[i]);
+    }
+
+    for( i = 0; i < amount; i++ )
+    {
+        CV_MAT_ELEM(*classes, float, 0, i) = (float)sample_clsnum[i];
+        cvGetRow(sample, vect, i);
+        clss = sample_clsnum[i];
+        cvMatMulAdd(vect, utmats[clss], means[clss], vect);
+    }
+
+    if( !sampClasses )
+        cvReleaseMat(&classes);
+    for( i = 0; i < clsnum; i++ )
+        cvReleaseMat(&utmats[i]);
+    cvFree(&utmats);
+    cvFree(&sample_clsnum);
+    cvReleaseMat(&vect);
+}
+
 
 CvMat* icvGenerateRandomClusterCenters ( int seed, const CvMat* data,
                                          int num_of_clusters, CvMat* _centers )
@@ -170,6 +316,55 @@ CvMat* icvGenerateRandomClusterCenters ( int seed, const CvMat* data,
 
     return _centers ? _centers : centers;
 } // end of icvGenerateRandomClusterCenters
+
+// By S. Dilman - begin -
+
+#define ICV_RAND_MAX    4294967296 // == 2^32
+
+// static void cvRandRoundUni (CvMat* center,
+//                              float radius_small,
+//                              float radius_large,
+//                              CvMat* desired_matrix,
+//                              CvRNG* rng_state_ptr)
+// {
+//     float rad, norm, coefficient;
+//     int dim, size, i, j;
+//     CvMat *cov, sample;
+//     CvRNG rng_local;
+
+//     CV_FUNCNAME("cvRandRoundUni");
+//     __BEGIN__
+
+//     rng_local = *rng_state_ptr;
+
+//     CV_ASSERT ((radius_small >= 0) &&
+//                (radius_large > 0) &&
+//                (radius_small <= radius_large));
+//     CV_ASSERT (center && desired_matrix && rng_state_ptr);
+//     CV_ASSERT (center->rows == 1);
+//     CV_ASSERT (center->cols == desired_matrix->cols);
+
+//     dim = desired_matrix->cols;
+//     size = desired_matrix->rows;
+//     cov = cvCreateMat (dim, dim, CV_32FC1);
+//     cvSetIdentity (cov);
+//     cvRandMVNormal (center, cov, desired_matrix, &rng_local);
+
+//     for (i = 0; i < size; i++)
+//     {
+//         rad = (float)(cvRandReal(&rng_local)*(radius_large - radius_small) + radius_small);
+//         cvGetRow (desired_matrix, &sample, i);
+//         norm = (float) cvNorm (&sample, 0, CV_L2);
+//         coefficient = rad / norm;
+//         for (j = 0; j < dim; j++)
+//              CV_MAT_ELEM (sample, float, 0, j) *= coefficient;
+//     }
+
+//     __END__
+
+// }
+
+// By S. Dilman - end -
 
 static int CV_CDECL
 icvCmpIntegers( const void* a, const void* b )
@@ -516,7 +711,7 @@ cvPreprocessCategoricalResponses( const CvMat* responses,
             if( ri != rf )
             {
                 char buf[100];
-                snprintf( buf, sizeof(buf), "response #%d is not integral", idx );
+                sprintf( buf, "response #%d is not integral", idx );
                 CV_ERROR( CV_StsBadArg, buf );
             }
             dst[i] = ri;

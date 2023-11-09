@@ -42,7 +42,6 @@
 
 #include "precomp.hpp"
 #include "bitstrm.hpp"
-#include "utils.hpp"
 
 namespace cv
 {
@@ -77,7 +76,6 @@ RBaseStream::RBaseStream()
 {
     m_start = m_end = m_current = 0;
     m_file = 0;
-    m_block_pos = 0;
     m_block_size = BS_DEF_BLOCK_SIZE;
     m_is_opened = false;
     m_allocated = false;
@@ -105,6 +103,7 @@ void  RBaseStream::readBlock()
     fseek( m_file, m_block_pos, SEEK_SET );
     size_t readed = fread( m_start, 1, m_block_size, m_file );
     m_end = m_start + readed;
+    m_current = m_start;
 
     if( readed == 0 || m_current >= m_end )
         throw RBS_THROW_EOS;
@@ -165,7 +164,7 @@ void  RBaseStream::release()
 
 void  RBaseStream::setPos( int pos )
 {
-    CV_Assert(isOpened() && pos >= 0);
+    assert( isOpened() && pos >= 0 );
 
     if( !m_file )
     {
@@ -175,29 +174,21 @@ void  RBaseStream::setPos( int pos )
     }
 
     int offset = pos % m_block_size;
-    int old_block_pos = m_block_pos;
     m_block_pos = pos - offset;
     m_current = m_start + offset;
-    if (old_block_pos != m_block_pos)
-        readBlock();
 }
 
 
 int  RBaseStream::getPos()
 {
-    CV_Assert(isOpened());
-    int pos = validateToInt((m_current - m_start) + m_block_pos);
-    CV_Assert(pos >= m_block_pos); // overflow check
-    CV_Assert(pos >= 0); // overflow check
-    return pos;
+    assert( isOpened() );
+    return m_block_pos + (int)(m_current - m_start);
 }
 
 void  RBaseStream::skip( int bytes )
 {
-    CV_Assert(bytes >= 0);
-    uchar* old = m_current;
+    assert( bytes >= 0 );
     m_current += bytes;
-    CV_Assert(m_current >= old);  // overflow check
 }
 
 /////////////////////////  RLByteStream ////////////////////////////
@@ -217,8 +208,6 @@ int  RLByteStream::getByte()
         current = m_current;
     }
 
-    CV_Assert(current < m_end);
-
     val = *((uchar*)current);
     m_current = current + 1;
     return val;
@@ -229,7 +218,7 @@ int RLByteStream::getBytes( void* buffer, int count )
 {
     uchar*  data = (uchar*)buffer;
     int readed = 0;
-    CV_Assert(count >= 0);
+    assert( count >= 0 );
 
     while( count > 0 )
     {
@@ -347,7 +336,6 @@ WBaseStream::WBaseStream()
 {
     m_start = m_end = m_current = 0;
     m_file = 0;
-    m_block_pos = 0;
     m_block_size = BS_DEF_BLOCK_SIZE;
     m_is_opened = false;
     m_buf = 0;
@@ -381,7 +369,7 @@ void  WBaseStream::writeBlock()
 {
     int size = (int)(m_current - m_start);
 
-    CV_Assert(isOpened());
+    assert( isOpened() );
     if( size == 0 )
         return;
 
@@ -452,7 +440,7 @@ void  WBaseStream::release()
 
 int  WBaseStream::getPos()
 {
-    CV_Assert(isOpened());
+    assert( isOpened() );
     return m_block_pos + (int)(m_current - m_start);
 }
 
@@ -475,7 +463,7 @@ void WLByteStream::putBytes( const void* buffer, int count )
 {
     uchar* data = (uchar*)buffer;
 
-    CV_Assert(data && m_current && count >= 0);
+    assert( data && m_current && count >= 0 );
 
     while( count )
     {

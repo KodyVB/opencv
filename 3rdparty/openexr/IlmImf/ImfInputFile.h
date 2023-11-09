@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -43,22 +43,20 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "ImfHeader.h"
-#include "ImfFrameBuffer.h"
-#include "ImfTiledOutputFile.h"
-#include "ImfThreading.h"
-#include "ImfGenericInputFile.h"
-#include "ImfNamespace.h"
-#include "ImfForward.h"
-#include "ImfExport.h"
-
+#include <ImfHeader.h>
+#include <ImfFrameBuffer.h>
+#include <ImfTiledOutputFile.h>
+#include <string>
 #include <fstream>
+#include <ImfThreading.h>
+
+namespace Imf {
+
+class TiledInputFile;
+class ScanLineInputFile;
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
-
-
-class InputFile : public GenericInputFile
+class InputFile
 {
   public:
 
@@ -70,7 +68,6 @@ class InputFile : public GenericInputFile
     // used to read the file (see ImfThreading.h).
     //-----------------------------------------------------------
 
-    IMF_EXPORT
     InputFile (const char fileName[], int numThreads = globalThreadCount());
 
 
@@ -83,15 +80,13 @@ class InputFile : public GenericInputFile
     // used to read the file (see ImfThreading.h).
     //-------------------------------------------------------------
 
-    IMF_EXPORT
-    InputFile (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is, int numThreads = globalThreadCount());
+    InputFile (IStream &is, int numThreads = globalThreadCount());
 
 
     //-----------
     // Destructor
     //-----------
 
-    IMF_EXPORT
     virtual ~InputFile ();
 
 
@@ -99,7 +94,6 @@ class InputFile : public GenericInputFile
     // Access to the file name
     //------------------------
 
-    IMF_EXPORT
     const char *	fileName () const;
 
 
@@ -107,7 +101,6 @@ class InputFile : public GenericInputFile
     // Access to the file header
     //--------------------------
 
-    IMF_EXPORT
     const Header &	header () const;
 
 
@@ -115,7 +108,6 @@ class InputFile : public GenericInputFile
     // Access to the file format version
     //----------------------------------
 
-    IMF_EXPORT
     int			version () const;
 
 
@@ -130,7 +122,6 @@ class InputFile : public GenericInputFile
     // to readPixels().
     //-----------------------------------------------------------
 
-    IMF_EXPORT
     void		setFrameBuffer (const FrameBuffer &frameBuffer);
 
 
@@ -138,7 +129,6 @@ class InputFile : public GenericInputFile
     // Access to the current frame buffer
     //-----------------------------------
 
-    IMF_EXPORT
     const FrameBuffer &	frameBuffer () const;
 
 
@@ -151,33 +141,8 @@ class InputFile : public GenericInputFile
     // writing may have been aborted prematurely.)
     //---------------------------------------------------------------
 
-    IMF_EXPORT
     bool		isComplete () const;
 
-    
-    //---------------------------------------------------------------
-    // Check if SSE optimization is enabled
-    //
-    // Call after setFrameBuffer() to query whether optimized file decoding
-    // is available - decode times will be faster if returns true
-    //
-    // Optimization depends on:
-    //   the file type (only scanline data is supported),
-    //   the framebuffer channels (RGB/RGBA mono or stereo)
-    //   the framebuffer channel types (all channels half-float format only)
-    //   the file channels (RGB/RGBA mono or stereo)
-    //   the file channel types (all channel half-float format only)
-    //   whether SSE2 instruction support was detected at compile time
-    //
-    // Calling isOptimizationEnabled before setFrameBuffer will throw an exception
-    //
-    //---------------------------------------------------------------
-    
-    IMF_EXPORT
-    bool                isOptimizationEnabled () const;
-    
-    
-    
 
     //---------------------------------------------------------------
     // Read pixel data:
@@ -198,9 +163,7 @@ class InputFile : public GenericInputFile
     //
     //---------------------------------------------------------------
 
-    IMF_EXPORT
     void		readPixels (int scanLine1, int scanLine2);
-    IMF_EXPORT
     void		readPixels (int scanLine);
 
 
@@ -210,34 +173,9 @@ class InputFile : public GenericInputFile
     // used to implement OutputFile::copyPixels()).
     //----------------------------------------------
 
-    IMF_EXPORT
     void		rawPixelData (int firstScanLine,
-				      const char *&pixelData,
-				      int &pixelDataSize);
-
-
-    //----------------------------------------------
-    // Read a scanline's worth of raw pixel data 
-    // from the file, without uncompressing it, and 
-    // store in an external buffer, pixelData. 
-    // pixelData should be pre-allocated with space 
-    // for pixelDataSize chars. 
-    //
-    // This function can be used to separate the 
-    // reading of a raw scan line from the 
-    // decompression of that scan line, for
-    // example to allow multiple scan lines to be
-    // decompressed in parallel by an application's
-    // own threads, where it is not convenient to 
-    // use the threading within the library.
-    //----------------------------------------------
-
-    IMF_EXPORT
-    void		rawPixelDataToBuffer (int scanLine,
-					      char *pixelData,
-					      int &pixelDataSize) const;   
-    
- 
+                      const char *&pixelData,
+                      int &pixelDataSize);
 
     //--------------------------------------------------
     // Read a tile of raw pixel data from the file,
@@ -245,34 +183,27 @@ class InputFile : public GenericInputFile
     // used to implement TiledOutputFile::copyPixels()).
     //--------------------------------------------------
 
-    IMF_EXPORT
     void		rawTileData (int &dx, int &dy,
-				     int &lx, int &ly,
-				     const char *&pixelData,
-				     int &pixelDataSize);
+                     int &lx, int &ly,
+                     const char *&pixelData,
+                     int &pixelDataSize);
 
     struct Data;
-    
+
   private:
 
-    InputFile (InputPartData* part);
     InputFile (const InputFile &);			// not implemented
     InputFile & operator = (const InputFile &);		// not implemented
 
     void		initialize ();
-    void                multiPartInitialize(InputPartData* part);
-    void                compatibilityInitialize(OPENEXR_IMF_INTERNAL_NAMESPACE::IStream& is);
     TiledInputFile *	tFile ();
-    
+
     friend void TiledOutputFile::copyPixels (InputFile &);
-    
+
     Data *		_data;
-
-
-    friend class MultiPartInputFile;
 };
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
+} // namespace Imf
 
 #endif

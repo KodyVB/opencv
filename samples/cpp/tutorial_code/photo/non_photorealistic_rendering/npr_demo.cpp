@@ -14,24 +14,32 @@
 *
 */
 
+#include <signal.h>
 #include "opencv2/photo.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
+#include "opencv2/core.hpp"
 #include <iostream>
+#include <stdlib.h>
 
 using namespace std;
 using namespace cv;
 
 int main(int argc, char* argv[])
 {
+    if(argc < 2)
+    {
+        cout << "usage: " << argv[0] << " <Input image> "  << endl;
+        exit(0);
+    }
+
     int num,type;
-    CommandLineParser parser(argc, argv, "{@input | lena.jpg | input image}");
-    Mat src = imread( samples::findFile( parser.get<String>("@input") ), IMREAD_COLOR);
+
+    Mat src = imread(argv[1], IMREAD_COLOR);
 
     if(src.empty())
     {
-        cout << "Could not open or find the image!\n" << endl;
-        cout << "Usage: " << argv[0] << " <Input image>" << endl;
+        cout <<  "Image not found" << endl;
         exit(0);
     }
 

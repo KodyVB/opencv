@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2002-2012, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -40,27 +40,19 @@
 //
 //---------------------------------------------------------------------
 
-#include "IexExport.h"
 #include "IexBaseExc.h"
-#include "IexMacros.h"
 
-#ifdef PLATFORM_WINDOWS
-#include <windows.h>
-#endif
-
-#include <stdlib.h>
-
-IEX_INTERNAL_NAMESPACE_SOURCE_ENTER
-
-
+namespace Iex {
 namespace {
 
+
 StackTracer currentStackTracer = 0;
+
 
 } // namespace
 
 
-void	
+void
 setStackTracer (StackTracer stackTracer)
 {
     currentStackTracer = stackTracer;
@@ -75,7 +67,7 @@ stackTracer ()
 
 
 BaseExc::BaseExc (const char* s) throw () :
-    _message (s? s: ""),
+    std::string (s? s: ""),
     _stackTrace (currentStackTracer? currentStackTracer(): "")
 {
     // empty
@@ -83,7 +75,7 @@ BaseExc::BaseExc (const char* s) throw () :
 
 
 BaseExc::BaseExc (const std::string &s) throw () :
-    _message (s),
+    std::string (s),
     _stackTrace (currentStackTracer? currentStackTracer(): "")
 {
     // empty
@@ -91,7 +83,7 @@ BaseExc::BaseExc (const std::string &s) throw () :
 
 
 BaseExc::BaseExc (std::stringstream &s) throw () :
-    _message (s.str()),
+    std::string (s.str()),
     _stackTrace (currentStackTracer? currentStackTracer(): "")
 {
     // empty
@@ -99,7 +91,7 @@ BaseExc::BaseExc (std::stringstream &s) throw () :
 
 
 BaseExc::BaseExc (const BaseExc &be) throw () :
-    _message (be._message),
+    std::string (be),
     _stackTrace (be._stackTrace)
 {
     // empty
@@ -115,99 +107,23 @@ BaseExc::~BaseExc () throw ()
 const char *
 BaseExc::what () const throw ()
 {
-    return _message.c_str();
+    return c_str();
 }
 
 
 BaseExc &
 BaseExc::assign (std::stringstream &s)
 {
-    _message.assign (s.str());
+    std::string::assign (s.str());
     return *this;
 }
 
 BaseExc &
 BaseExc::append (std::stringstream &s)
 {
-    _message.append (s.str());
-    return *this;
-}
-
-const std::string &
-BaseExc::message() const
-{
-	return _message;
-}
-
-BaseExc &
-BaseExc::operator = (std::stringstream &s)
-{
-    return assign (s);
-}
-
-
-BaseExc &
-BaseExc::operator += (std::stringstream &s)
-{
-    return append (s);
-}
-
-
-BaseExc &
-BaseExc::assign (const char *s)
-{
-    _message.assign(s);
+    std::string::append (s.str());
     return *this;
 }
 
 
-BaseExc &
-BaseExc::operator = (const char *s)
-{
-    return assign(s);
-}
-
-
-BaseExc &
-BaseExc::append (const char *s)
-{
-    _message.append(s);
-    return *this;
-}
-
-
-BaseExc &
-BaseExc::operator += (const char *s)
-{
-    return append(s);
-}
-
-
-const std::string &
-BaseExc::stackTrace () const
-{
-    return _stackTrace;
-}
-
-
-IEX_INTERNAL_NAMESPACE_SOURCE_EXIT
-
-
-#ifdef PLATFORM_WINDOWS
-
-#pragma optimize("", off)
-void
-iex_debugTrap()
-{
-    if (0 != getenv("IEXDEBUGTHROW"))
-        ::DebugBreak();
-}
-#else
-void
-iex_debugTrap()
-{
-    // how to in Linux?
-    if (0 != ::getenv("IEXDEBUGTHROW"))
-        __builtin_trap();
-}
-#endif
+} // namespace Iex

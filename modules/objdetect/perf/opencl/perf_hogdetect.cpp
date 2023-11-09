@@ -49,11 +49,12 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 ///////////// HOG////////////////////////
 
-struct RectLess
+struct RectLess :
+        public std::binary_function<cv::Rect, cv::Rect, bool>
 {
     bool operator()(const cv::Rect& a,
         const cv::Rect& b) const

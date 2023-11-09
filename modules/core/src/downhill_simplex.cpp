@@ -77,7 +77,7 @@ Replaced y(1,ndim,0.0) ------> y(1,ndim+1,0.0)
 
 ***********************************************************************************************************************************
 
-The code below was used in testing the source code.
+The code below was used in tesing the source code.
 Created by @SareeAlnaghy
 
 #include <iostream>
@@ -129,7 +129,7 @@ system("pause");
 return 0;
 }
 
-****Suggestion for improving Simplex implementation***************************************************************************************
+****Suggesttion for imporving Simplex implentation***************************************************************************************
 
 Currently the downhilll simplex method outputs the function value that is minimized. It should also return the coordinate points where the
 function is minimized. This is very useful in many applications such as using back projection methods to find a point of intersection of
@@ -140,7 +140,7 @@ multiple lines in three dimensions as not all lines intersect in three dimension
 namespace cv
 {
 
-class DownhillSolverImpl CV_FINAL : public DownhillSolver
+class DownhillSolverImpl : public DownhillSolver
 {
 public:
     DownhillSolverImpl()
@@ -149,8 +149,8 @@ public:
         _step=Mat_<double>();
     }
 
-    void getInitStep(OutputArray step) const CV_OVERRIDE { _step.copyTo(step); }
-    void setInitStep(InputArray step) CV_OVERRIDE
+    void getInitStep(OutputArray step) const { _step.copyTo(step); }
+    void setInitStep(InputArray step)
     {
         // set dimensionality and make a deep copy of step
         Mat m = step.getMat();
@@ -161,13 +161,13 @@ public:
             transpose(m, _step);
     }
 
-    Ptr<MinProblemSolver::Function> getFunction() const CV_OVERRIDE { return _Function; }
+    Ptr<MinProblemSolver::Function> getFunction() const { return _Function; }
 
-    void setFunction(const Ptr<Function>& f) CV_OVERRIDE { _Function=f; }
+    void setFunction(const Ptr<Function>& f) { _Function=f; }
 
-    TermCriteria getTermCriteria() const CV_OVERRIDE { return _termcrit; }
+    TermCriteria getTermCriteria() const { return _termcrit; }
 
-    void setTermCriteria( const TermCriteria& termcrit ) CV_OVERRIDE
+    void setTermCriteria( const TermCriteria& termcrit )
     {
         CV_Assert( termcrit.type == (TermCriteria::MAX_ITER + TermCriteria::EPS) &&
                    termcrit.epsilon > 0 &&
@@ -175,7 +175,7 @@ public:
         _termcrit=termcrit;
     }
 
-    double minimize( InputOutputArray x_ ) CV_OVERRIDE
+    double minimize( InputOutputArray x_ )
     {
         dprintf(("hi from minimize\n"));
         CV_Assert( !_Function.empty() );

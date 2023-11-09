@@ -1,18 +1,10 @@
 #!/usr/bin/env python
-""" Parse XML test log file.
 
-This module serves as utility for other scripts.
-"""
-from __future__ import print_function
 import collections
 import re
 import os.path
 import sys
 from xml.dom.minidom import parse
-
-if sys.version_info > (3,):
-    long = int
-    def cmp(a, b): return (a>b)-(a<b)
 
 class TestInfo(object):
 
@@ -33,15 +25,9 @@ class TestInfo(object):
             self.status = xmlnode.getAttribute("status")
 
         if self.name.startswith("DISABLED_"):
-            if self.status == 'notrun':
-                self.status = "disabled"
+            self.status = "disabled"
             self.fixture = self.fixture.replace("DISABLED_", "")
             self.name = self.name.replace("DISABLED_", "")
-        self.properties = {
-            prop.getAttribute("name") : prop.getAttribute("value")
-            for prop in xmlnode.getElementsByTagName("property")
-            if prop.hasAttribute("name") and prop.hasAttribute("value")
-        }
         self.metrix = {}
         self.parseLongMetric(xmlnode, "bytesIn");
         self.parseLongMetric(xmlnode, "bytesOut");
@@ -55,37 +41,35 @@ class TestInfo(object):
         self.parseLongMetric(xmlnode, "stddev");
         self.parseFloatMetric(xmlnode, "gstddev");
         self.parseFloatMetric(xmlnode, "time");
-        self.parseLongMetric(xmlnode, "total_memory_usage");
 
     def parseLongMetric(self, xmlnode, name, default = 0):
-        if name in self.properties:
-            self.metrix[name] = long(self.properties[name])
-        elif xmlnode.hasAttribute(name):
-            self.metrix[name] = long(xmlnode.getAttribute(name))
+        if xmlnode.hasAttribute(name):
+            tmp = xmlnode.getAttribute(name)
+            val = long(tmp)
+            self.metrix[name] = val
         else:
             self.metrix[name] = default
 
     def parseIntMetric(self, xmlnode, name, default = 0):
-        if name in self.properties:
-            self.metrix[name] = int(self.properties[name])
-        elif xmlnode.hasAttribute(name):
-            self.metrix[name] = int(xmlnode.getAttribute(name))
+        if xmlnode.hasAttribute(name):
+            tmp = xmlnode.getAttribute(name)
+            val = int(tmp)
+            self.metrix[name] = val
         else:
             self.metrix[name] = default
 
     def parseFloatMetric(self, xmlnode, name, default = 0):
-        if name in self.properties:
-            self.metrix[name] = float(self.properties[name])
-        elif xmlnode.hasAttribute(name):
-            self.metrix[name] = float(xmlnode.getAttribute(name))
+        if xmlnode.hasAttribute(name):
+            tmp = xmlnode.getAttribute(name)
+            val = float(tmp)
+            self.metrix[name] = val
         else:
             self.metrix[name] = default
 
     def parseStringMetric(self, xmlnode, name, default = None):
-        if name in self.properties:
-            self.metrix[name] = self.properties[name].strip()
-        elif xmlnode.hasAttribute(name):
-            self.metrix[name] = xmlnode.getAttribute(name).strip()
+        if xmlnode.hasAttribute(name):
+            tmp = xmlnode.getAttribute(name)
+            self.metrix[name] = tmp.strip()
         else:
             self.metrix[name] = default
 
@@ -112,7 +96,7 @@ class TestInfo(object):
             frequency = self.metrix.get("frequency", 1.0) or 1.0
             if units == "ms":
                 scale = 1000.0
-            if units == "us" or units == "mks":  # mks is typo error for microsecond (<= OpenCV 3.4)
+            if units == "mks":
                 scale = 1000000.0
             if units == "ns":
                 scale = 1000000000.0
@@ -124,7 +108,7 @@ class TestInfo(object):
 
 
     def dump(self, units="ms"):
-        print("%s ->\t\033[1;31m%s\033[0m = \t%.2f%s" % (str(self), self.status, self.get("gmean", units), units))
+        print "%s ->\t\033[1;31m%s\033[0m = \t%.2f%s" % (str(self), self.status, self.get("gmean", units), units)
 
 
     def getName(self):
@@ -185,12 +169,9 @@ class TestInfo(object):
                 return 1
         return 0
 
-    def __lt__(self, other):
-        return self.__cmp__(other) == -1
-
 # This is a Sequence for compatibility with old scripts,
 # which treat parseLogFile's return value as a list.
-class TestRunInfo(object):
+class TestRunInfo(collections.Sequence):
     def __init__(self, properties, tests):
         self.properties = properties
         self.tests = tests
@@ -210,29 +191,29 @@ def parseLogFile(filename):
         if attr_name.startswith('cv_')
     }
 
-    tests = list(map(TestInfo, log.getElementsByTagName("testcase")))
+    tests = map(TestInfo, log.getElementsByTagName("testcase"))
 
     return TestRunInfo(properties, tests)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage:\n", os.path.basename(sys.argv[0]), "<log_name>.xml")
+        print "Usage:\n", os.path.basename(sys.argv[0]), "<log_name>.xml"
         exit(0)
 
     for arg in sys.argv[1:]:
-        print("Processing {}...".format(arg))
+        print "Processing {}...".format(arg)
 
         run = parseLogFile(arg)
 
-        print("Properties:")
+        print "Properties:"
 
         for (prop_name, prop_value) in run.properties.items():
-          print("\t{} = {}".format(prop_name, prop_value))
+          print "\t{} = {}".format(prop_name, prop_value)
 
-        print("Tests:")
+        print "Tests:"
 
         for t in sorted(run.tests):
             t.dump()
 
-        print()
+        print

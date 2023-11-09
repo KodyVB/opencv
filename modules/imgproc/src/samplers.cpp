@@ -74,7 +74,7 @@ adjustRect( const uchar* src, size_t src_step, int pix_size,
             src += rect.width*pix_size;
             rect.width = 0;
         }
-        CV_Assert( rect.width <= win_size.width );
+        assert( rect.width <= win_size.width );
     }
 
     if( ip.y >= 0 )
@@ -365,7 +365,7 @@ getQuadrangleSubPix_8u32f_CnR( const uchar* src, size_t src_step, Size src_size,
 void cv::getRectSubPix( InputArray _image, Size patchSize, Point2f center,
                        OutputArray _patch, int patchType )
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Mat image = _image.getMat();
     int depth = image.depth(), cn = image.channels();
@@ -441,7 +441,7 @@ cvGetQuadrangleSubPix( const void* srcarr, void* dstarr, const CvMat* mat )
     CV_Assert( src.channels() == dst.channels() );
 
     cv::Size win_size = dst.size();
-    double matrix[6] = {0};
+    double matrix[6];
     cv::Mat M(2, 3, CV_64F, matrix);
     m.convertTo(M, CV_64F);
     double dx = (win_size.width - 1)*0.5;

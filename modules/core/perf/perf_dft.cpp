@@ -1,8 +1,10 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 ///////////////////////////////////////////////////////dft//////////////////////////////////////////////////////////////
 
@@ -11,7 +13,7 @@ using namespace perf;
 CV_ENUM(FlagsType, 0, DFT_INVERSE, DFT_SCALE, DFT_COMPLEX_OUTPUT, DFT_ROWS, DFT_INVERSE|DFT_COMPLEX_OUTPUT)
 #define TEST_MATS_DFT  testing::Combine(testing::Values(MAT_SIZES_DFT), testing::Values(MAT_TYPES_DFT), FlagsType::all(), testing::Values(true, false))
 
-typedef tuple<Size, MatType, FlagsType, bool> Size_MatType_FlagsType_NzeroRows_t;
+typedef std::tr1::tuple<Size, MatType, FlagsType, bool> Size_MatType_FlagsType_NzeroRows_t;
 typedef perf::TestBaseWithParam<Size_MatType_FlagsType_NzeroRows_t> Size_MatType_FlagsType_NzeroRows;
 
 PERF_TEST_P(Size_MatType_FlagsType_NzeroRows, dft, TEST_MATS_DFT)
@@ -40,7 +42,7 @@ PERF_TEST_P(Size_MatType_FlagsType_NzeroRows, dft, TEST_MATS_DFT)
 
 CV_ENUM(DCT_FlagsType, 0, DCT_INVERSE , DCT_ROWS, DCT_INVERSE|DCT_ROWS)
 
-typedef tuple<Size, MatType, DCT_FlagsType> Size_MatType_Flag_t;
+typedef std::tr1::tuple<Size, MatType, DCT_FlagsType> Size_MatType_Flag_t;
 typedef perf::TestBaseWithParam<Size_MatType_Flag_t> Size_MatType_Flag;
 
 PERF_TEST_P(Size_MatType_Flag, dct, testing::Combine(
@@ -65,5 +67,3 @@ PERF_TEST_P(Size_MatType_Flag, dct, testing::Combine(
 
     SANITY_CHECK(dst, 1e-5, ERROR_RELATIVE);
 }
-
-} // namespace

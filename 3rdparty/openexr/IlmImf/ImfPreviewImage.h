@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -36,9 +36,6 @@
 #ifndef INCLUDED_IMF_PREVIEW_IMAGE_H
 #define INCLUDED_IMF_PREVIEW_IMAGE_H
 
-#include "ImfNamespace.h"
-#include "ImfExport.h"
-
 //-----------------------------------------------------------------------------
 //
 //	class PreviewImage -- a usually small, low-dynamic range image,
@@ -48,8 +45,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+namespace Imf {
 
 
 struct PreviewRgba
@@ -57,16 +53,16 @@ struct PreviewRgba
     unsigned char	r;	// Red, green and blue components of
     unsigned char	g;	// the pixel's color; intensity is
     unsigned char	b;	// proportional to pow (x/255, 2.2),
-    				// where x is r, g, or b.
+                    // where x is r, g, or b.
 
     unsigned char	a;	// The pixel's alpha; 0 == transparent,
-				// 255 == opaque.
+                // 255 == opaque.
 
     PreviewRgba (unsigned char r = 0,
-		 unsigned char g = 0,
-		 unsigned char b = 0,
-		 unsigned char a = 255)
-	: r(r), g(g), b(b), a(a) {}
+         unsigned char g = 0,
+         unsigned char b = 0,
+         unsigned char a = 255)
+    : r(r), g(g), b(b), a(a) {}
 };
 
 
@@ -86,22 +82,18 @@ class PreviewImage
     // (r = 0, b = 0, g = 0, a = 255).
     //
     //--------------------------------------------------------------------
-   
-    IMF_EXPORT
+
      PreviewImage (unsigned int width = 0,
-		   unsigned int height = 0,
-		   const PreviewRgba pixels[] = 0);
+           unsigned int height = 0,
+           const PreviewRgba pixels[] = 0);
 
     //-----------------------------------------------------
     // Copy constructor, destructor and assignment operator
     //-----------------------------------------------------
 
-    IMF_EXPORT
      PreviewImage (const PreviewImage &other);
-    IMF_EXPORT
     ~PreviewImage ();
 
-    IMF_EXPORT
     PreviewImage &	operator = (const PreviewImage &other);
 
 
@@ -109,14 +101,10 @@ class PreviewImage
     // Access to width, height and to the pixel array
     //-----------------------------------------------
 
-    IMF_EXPORT
     unsigned int	width () const	{return _width;}
-    IMF_EXPORT
     unsigned int	height () const	{return _height;}
 
-    IMF_EXPORT
     PreviewRgba *	pixels ()	{return _pixels;}
-    IMF_EXPORT
     const PreviewRgba *	pixels () const	{return _pixels;}
 
 
@@ -124,13 +112,11 @@ class PreviewImage
     // Access to individual pixels
     //----------------------------
 
-    IMF_EXPORT
     PreviewRgba &	pixel (unsigned int x, unsigned int y)
-    					{return _pixels[y * _width + x];}
+                        {return _pixels[y * _width + x];}
 
-    IMF_EXPORT
     const PreviewRgba &	pixel (unsigned int x, unsigned int y) const
-    					{return _pixels[y * _width + x];}
+                        {return _pixels[y * _width + x];}
 
   private:
 
@@ -140,6 +126,6 @@ class PreviewImage
 };
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
+} // namespace Imf
 
 #endif

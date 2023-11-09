@@ -49,7 +49,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 ////////////////////////////////converto/////////////////////////////////////////////////
@@ -219,6 +219,6 @@ OCL_INSTANTIATE_TEST_CASE_P(MatrixOperation, CopyTo, Combine(
 OCL_INSTANTIATE_TEST_CASE_P(MatrixOperation, SetTo, Combine(
                                 OCL_ALL_DEPTHS, OCL_ALL_CHANNELS, Bool(), Bool()));
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif

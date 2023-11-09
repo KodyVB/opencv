@@ -5,10 +5,13 @@
 #include "perf_precomp.hpp"
 #include "opencv2/ts/ocl_perf.hpp"
 
-namespace opencv_test
-{
-using namespace perf;
+using namespace std;
+using namespace cv;
+using namespace ::perf;
 using namespace ::cvtest::ocl;
+using namespace ::testing;
+using std::tr1::tuple;
+using std::tr1::get;
 
 
 struct OpenCLState
@@ -60,5 +63,3 @@ OCL_PERF_TEST_P(UMatTest, CustomPtr, Combine(Values(sz1080p, sz2160p), Bool(), :
 
     SANITY_CHECK_NOTHING();
 }
-
-} // namespace

@@ -49,7 +49,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 //////////////////////////////////////// Merge ///////////////////////////////////////////////
@@ -464,6 +464,6 @@ OCL_INSTANTIATE_TEST_CASE_P(Channels, MixChannels, Combine(OCL_ALL_DEPTHS, Bool(
 OCL_INSTANTIATE_TEST_CASE_P(Channels, InsertChannel, Combine(OCL_ALL_DEPTHS, OCL_ALL_CHANNELS, Bool()));
 OCL_INSTANTIATE_TEST_CASE_P(Channels, ExtractChannel, Combine(OCL_ALL_DEPTHS, OCL_ALL_CHANNELS, Bool()));
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

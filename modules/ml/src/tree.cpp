@@ -43,8 +43,6 @@
 #include "precomp.hpp"
 #include <ctype.h>
 
-#include <opencv2/core/utils/logger.hpp>
-
 namespace cv {
 namespace ml {
 
@@ -100,7 +98,6 @@ DTrees::Split::Split()
 
 DTreesImpl::WorkData::WorkData(const Ptr<TrainData>& _data)
 {
-    CV_Assert(!_data.empty());
     data = _data;
     vector<int> subsampleIdx;
     Mat sidx0 = _data->getTrainSampleIdx();
@@ -118,7 +115,7 @@ DTreesImpl::WorkData::WorkData(const Ptr<TrainData>& _data)
     maxSubsetSize = 0;
 }
 
-DTreesImpl::DTreesImpl() : _isClassifier(false) {}
+DTreesImpl::DTreesImpl() {}
 DTreesImpl::~DTreesImpl() {}
 void DTreesImpl::clear()
 {
@@ -139,7 +136,6 @@ void DTreesImpl::clear()
 
 void DTreesImpl::startTraining( const Ptr<TrainData>& data, int )
 {
-    CV_Assert(!data.empty());
     clear();
     w = makePtr<WorkData>(data);
 
@@ -227,7 +223,6 @@ void DTreesImpl::endTraining()
 
 bool DTreesImpl::train( const Ptr<TrainData>& trainData, int flags )
 {
-    CV_Assert(!trainData.empty());
     startTraining(trainData, flags);
     bool ok = addTree( w->sidx ) >= 0;
     w.release();
@@ -422,7 +417,7 @@ int DTreesImpl::findBestSplit( const vector<int>& _sidx )
     int splitidx = -1;
     int vi_, nv = (int)activeVars.size();
     AutoBuffer<int> buf(w->maxSubsetSize*2);
-    int *subset = buf.data(), *best_subset = subset + w->maxSubsetSize;
+    int *subset = buf, *best_subset = subset + w->maxSubsetSize;
     WSplit split, best_split;
     best_split.quality = 0.;
 
@@ -493,7 +488,7 @@ void DTreesImpl::calcValue( int nidx, const vector<int>& _sidx )
         //    misclassified samples with cv_labels(*)==j.
 
         // compute the number of instances of each class
-        double* cls_count = buf.data();
+        double* cls_count = buf;
         double* cv_cls_count = cls_count + m;
 
         double max_val = -1, total_weight = 0;
@@ -597,7 +592,7 @@ void DTreesImpl::calcValue( int nidx, const vector<int>& _sidx )
         }
         else
         {
-            double *cv_sum = buf.data(), *cv_sum2 = cv_sum + cv_n;
+            double *cv_sum = buf, *cv_sum2 = cv_sum + cv_n;
             double* cv_count = (double*)(cv_sum2 + cv_n);
 
             for( j = 0; j < cv_n; j++ )
@@ -635,9 +630,8 @@ void DTreesImpl::calcValue( int nidx, const vector<int>& _sidx )
                 w->cv_Tn[nidx*cv_n + j] = INT_MAX;
             }
         }
-        CV_Assert(fabs(sumw) > 0);
+
         node->node_risk = sum2 - (sum/sumw)*sum;
-        node->node_risk /= sumw;
         node->value = sum/sumw;
     }
 }
@@ -651,7 +645,7 @@ DTreesImpl::WSplit DTreesImpl::findSplitOrdClass( int vi, const vector<int>& _si
     const int* sidx = &_sidx[0];
     const int* responses = &w->cat_responses[0];
     const double* weights = &w->sample_weights[0];
-    double* lcw = (double*)buf.data();
+    double* lcw = (double*)(uchar*)buf;
     double* rcw = lcw + m;
     float* values = (float*)(rcw + m);
     int* sorted_idx = (int*)(values + n);
@@ -722,7 +716,7 @@ void DTreesImpl::clusterCategories( const double* vectors, int n, int m, double*
     int iters = 0, max_iters = 100;
     int i, j, idx;
     cv::AutoBuffer<double> buf(n + k);
-    double *v_weights = buf.data(), *c_weights = buf.data() + n;
+    double *v_weights = buf, *c_weights = buf + n;
     bool modified = true;
     RNG r((uint64)-1);
 
@@ -824,12 +818,12 @@ DTreesImpl::WSplit DTreesImpl::findSplitCatClass( int vi, const vector<int>& _si
         base_size += mi;
     AutoBuffer<double> buf(base_size + n);
 
-    double* lc = buf.data();
+    double* lc = (double*)buf;
     double* rc = lc + m;
     double* _cjk = rc + m*2, *cjk = _cjk;
     double* c_weights = cjk + m*mi;
 
-    int* labels = (int*)(buf.data() + base_size);
+    int* labels = (int*)(buf + base_size);
     w->data->getNormCatValues(vi, _sidx, labels);
     const int* responses = &w->cat_responses[0];
     const double* weights = &w->sample_weights[0];
@@ -869,7 +863,7 @@ DTreesImpl::WSplit DTreesImpl::findSplitCatClass( int vi, const vector<int>& _si
     }
     else
     {
-        CV_Assert( m == 2 );
+        assert( m == 2 );
         dbl_ptr = (double**)(c_weights + _mi);
         for( j = 0; j < mi; j++ )
             dbl_ptr[j] = cjk + j*2 + 1;
@@ -996,7 +990,7 @@ DTreesImpl::WSplit DTreesImpl::findSplitOrdReg( int vi, const vector<int>& _sidx
 
     AutoBuffer<uchar> buf(n*(sizeof(int) + sizeof(float)));
 
-    float* values = (float*)buf.data();
+    float* values = (float*)(uchar*)buf;
     int* sorted_idx = (int*)(values + n);
     w->data->getValues(vi, _sidx, values);
     const double* responses = &w->ord_responses[0];
@@ -1058,7 +1052,7 @@ DTreesImpl::WSplit DTreesImpl::findSplitCatReg( int vi, const vector<int>& _sidx
     int mi = getCatCount(vi);
 
     AutoBuffer<double> buf(3*mi + 3 + n);
-    double* sum = buf.data() + 1;
+    double* sum = (double*)buf + 1;
     double* counts = sum + mi + 1;
     double** sum_ptr = (double**)(counts + mi);
     int* cat_labels = (int*)(sum_ptr + mi);
@@ -1153,7 +1147,7 @@ int DTreesImpl::calcDir( int splitidx, const vector<int>& _sidx,
     if( mi <= 0 ) // split on an ordered variable
     {
         float c = split.c;
-        float* values = buf.data();
+        float* values = buf;
         w->data->getValues(vi, _sidx, values);
 
         for( i = 0; i < n; i++ )
@@ -1174,7 +1168,7 @@ int DTreesImpl::calcDir( int splitidx, const vector<int>& _sidx,
     else
     {
         const int* subset = &w->wsubsets[split.subsetOfs];
-        int* cat_labels = (int*)buf.data();
+        int* cat_labels = (int*)(float*)buf;
         w->data->getNormCatValues(vi, _sidx, cat_labels);
 
         for( i = 0; i < n; i++ )
@@ -1377,7 +1371,7 @@ float DTreesImpl::predictTrees( const Range& range, const Mat& sample, int flags
     int i, ncats = (int)catOfs.size(), nclasses = (int)classLabels.size();
     int catbufsize = ncats > 0 ? nvars : 0;
     AutoBuffer<int> buf(nclasses + catbufsize + 1);
-    int* votes = buf.data();
+    int* votes = buf;
     int* catbuf = votes + nclasses;
     const int* cvidx = (flags & (COMPRESSED_INPUT|PREPROCESSED_INPUT)) == 0 && !varIdx.empty() ? &compVarIdx[0] : 0;
     const uchar* vtype = &varType[0];
@@ -1448,7 +1442,6 @@ float DTreesImpl::predictTrees( const Range& range, const Mat& sample, int flags
                             CV_Error( CV_StsBadArg,
                                      "one of input categorical variable is not an integer" );
 
-                        CV_Assert(cmap != NULL);
                         while( a < b )
                         {
                             c = (a + b) >> 1;
@@ -1696,13 +1689,10 @@ void DTreesImpl::write( FileStorage& fs ) const
 void DTreesImpl::readParams( const FileNode& fn )
 {
     _isClassifier = (int)fn["is_classifier"] != 0;
-    int varAll = (int)fn["var_all"];
-    int varCount = (int)fn["var_count"];
-    /*int cat_var_count = (int)fn["cat_var_count"];
+    /*int var_all = (int)fn["var_all"];
+    int var_count = (int)fn["var_count"];
+    int cat_var_count = (int)fn["cat_var_count"];
     int ord_var_count = (int)fn["ord_var_count"];*/
-
-    if (varAll <= 0)
-        CV_Error(Error::StsParseError, "The field \"var_all\" of DTree classifier is missing or non-positive");
 
     FileNode tparams_node = fn["training_params"];
 
@@ -1728,38 +1718,11 @@ void DTreesImpl::readParams( const FileNode& fn )
     readVectorOrMat(fn["var_idx"], varIdx);
     fn["var_type"] >> varType;
 
-    bool isLegacy = false;
-    if (fn["format"].empty())  // Export bug until OpenCV 3.2: https://github.com/opencv/opencv/pull/6314
-    {
-        if (!fn["cat_ofs"].empty())
-            isLegacy = false;  // 2.4 doesn't store "cat_ofs"
-        else if (!fn["missing_subst"].empty())
-            isLegacy = false;  // 2.4 doesn't store "missing_subst"
-        else if (!fn["class_labels"].empty())
-            isLegacy = false;  // 2.4 doesn't store "class_labels"
-        else if ((int)varType.size() != varAll)
-            isLegacy = true;  // 3.0+: https://github.com/opencv/opencv/blame/3.0.0/modules/ml/src/tree.cpp#L1576
-        else if (/*(int)varType.size() == varAll &&*/ varCount == varAll)
-            isLegacy = true;
-        else
-        {
-            // 3.0+:
-            // - https://github.com/opencv/opencv/blame/3.0.0/modules/ml/src/tree.cpp#L1552-L1553
-            // - https://github.com/opencv/opencv/blame/3.0.0/modules/ml/src/precomp.hpp#L296
-            isLegacy = !(varCount + 1 == varAll);
-        }
-        CV_LOG_INFO(NULL, "ML/DTrees: possible missing 'format' field due to bug of OpenCV export implementation. "
-                "Details: https://github.com/opencv/opencv/issues/5412. Consider re-exporting of saved ML model. "
-                "isLegacy = " << isLegacy);
-    }
-    else
-    {
-        int format = 0;
-        fn["format"] >> format;
-        CV_CheckGT(format, 0, "");
-        isLegacy = format < 3;
-    }
+    int format = 0;
+    fn["format"] >> format;
+    bool isLegacy = format < 3;
 
+    int varAll = (int)fn["var_all"];
     if (isLegacy && (int)varType.size() <= varAll)
     {
         std::vector<uchar> extendedTypes(varAll + 1, 0);
@@ -1977,12 +1940,6 @@ Ptr<DTrees> DTrees::create()
 {
     return makePtr<DTreesImpl>();
 }
-
-Ptr<DTrees> DTrees::load(const String& filepath, const String& nodeName)
-{
-    return Algorithm::load<DTrees>(filepath, nodeName);
-}
-
 
 }
 }

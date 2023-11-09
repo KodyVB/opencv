@@ -9,7 +9,7 @@ CV_EXPORTS_W void setErrorVerbosity(bool verbose);
 
 }
 
-#ifdef OPENCV_BINDINGS_PARSER
+#if 0
 
 namespace cv
 {
@@ -30,4 +30,4 @@ CV_EXPORTS_W void min(InputArray src1, Scalar src2, OutputArray dst);
 CV_EXPORTS_W void max(InputArray src1, Scalar src2, OutputArray dst);
 
 }
-#endif
+#endif //0

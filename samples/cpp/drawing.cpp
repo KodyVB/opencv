@@ -2,14 +2,13 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 #include <stdio.h>
-
 using namespace cv;
 
-static void help(char** argv)
+static void help()
 {
     printf("\nThis program demonstrates OpenCV drawing and text output functions.\n"
     "Usage:\n"
-    "   %s\n", argv[0]);
+    "   ./drawing\n");
 }
 static Scalar randomColor(RNG& rng)
 {
@@ -17,9 +16,14 @@ static Scalar randomColor(RNG& rng)
     return Scalar(icolor&255, (icolor>>8)&255, (icolor>>16)&255);
 }
 
-int main(int /* argc */, char** argv)
+int main(int argc, char** argv)
 {
-    help(argv);
+    cv::CommandLineParser parser(argc, argv, "{help h||}");
+    if (parser.has("help"))
+    {
+        help();
+        return 0;
+    }
     char wndname[] = "Drawing Demo";
     const int NUMBER = 100;
     const int DELAY = 5;
@@ -32,7 +36,7 @@ int main(int /* argc */, char** argv)
     imshow(wndname, image);
     waitKey(DELAY);
 
-    for (i = 0; i < NUMBER * 2; i++)
+    for (i = 0; i < NUMBER; i++)
     {
         Point pt1, pt2;
         pt1.x = rng.uniform(x1, x2);
@@ -40,19 +44,14 @@ int main(int /* argc */, char** argv)
         pt2.x = rng.uniform(x1, x2);
         pt2.y = rng.uniform(y1, y2);
 
-        int arrowed = rng.uniform(0, 6);
-
-        if( arrowed < 3 )
-            line( image, pt1, pt2, randomColor(rng), rng.uniform(1,10), lineType );
-        else
-            arrowedLine(image, pt1, pt2, randomColor(rng), rng.uniform(1, 10), lineType);
+        line( image, pt1, pt2, randomColor(rng), rng.uniform(1,10), lineType );
 
         imshow(wndname, image);
         if(waitKey(DELAY) >= 0)
             return 0;
     }
 
-    for (i = 0; i < NUMBER * 2; i++)
+    for (i = 0; i < NUMBER; i++)
     {
         Point pt1, pt2;
         pt1.x = rng.uniform(x1, x2);
@@ -60,13 +59,8 @@ int main(int /* argc */, char** argv)
         pt2.x = rng.uniform(x1, x2);
         pt2.y = rng.uniform(y1, y2);
         int thickness = rng.uniform(-3, 10);
-        int marker = rng.uniform(0, 10);
-        int marker_size = rng.uniform(30, 80);
 
-        if (marker > 5)
-            rectangle(image, pt1, pt2, randomColor(rng), MAX(thickness, -1), lineType);
-        else
-            drawMarker(image, pt1, randomColor(rng), marker, marker_size );
+        rectangle( image, pt1, pt2, randomColor(rng), MAX(thickness, -1), lineType );
 
         imshow(wndname, image);
         if(waitKey(DELAY) >= 0)
@@ -187,3 +181,7 @@ int main(int /* argc */, char** argv)
     waitKey();
     return 0;
 }
+
+#ifdef _EiC
+main(1,"drawing.c");
+#endif

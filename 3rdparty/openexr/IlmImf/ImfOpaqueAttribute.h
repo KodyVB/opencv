@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -49,11 +49,10 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "ImfAttribute.h"
-#include "ImfArray.h"
-#include "ImfNamespace.h"
+#include <ImfAttribute.h>
+#include <ImfArray.h>
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+namespace Imf {
 
 
 class OpaqueAttribute: public Attribute
@@ -64,11 +63,8 @@ class OpaqueAttribute: public Attribute
     // Constructors and destructor
     //----------------------------
 
-    IMF_EXPORT
     OpaqueAttribute (const char typeName[]);
-    IMF_EXPORT
     OpaqueAttribute (const OpaqueAttribute &other);
-    IMF_EXPORT
     virtual ~OpaqueAttribute ();
 
 
@@ -76,15 +72,13 @@ class OpaqueAttribute: public Attribute
     // Get this attribute's type name
     //-------------------------------
 
-    IMF_EXPORT
     virtual const char *	typeName () const;
-    
+
 
     //------------------------------
     // Make a copy of this attribute
     //------------------------------
 
-    IMF_EXPORT
     virtual Attribute *		copy () const;
 
 
@@ -92,16 +86,13 @@ class OpaqueAttribute: public Attribute
     // I/O and copying
     //----------------
 
-    IMF_EXPORT
-    virtual void		writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os,
-					      int version) const;
+    virtual void		writeValueTo (OStream &os,
+                          int version) const;
 
-    IMF_EXPORT
-    virtual void		readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is,
-					       int size,
-					       int version);
+    virtual void		readValueFrom (IStream &is,
+                           int size,
+                           int version);
 
-    IMF_EXPORT
     virtual void		copyValueFrom (const Attribute &other);
 
 
@@ -113,6 +104,11 @@ class OpaqueAttribute: public Attribute
 };
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
+} // namespace Imf
+
+// Metrowerks compiler wants the .cpp file inlined, too
+#ifdef __MWERKS__
+#include <ImfOpaqueAttribute.cpp>
+#endif
 
 #endif

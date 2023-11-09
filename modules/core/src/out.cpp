@@ -45,7 +45,7 @@
 
 namespace cv
 {
-    class FormattedImpl CV_FINAL : public Formatted
+    class FormattedImpl : public Formatted
     {
         enum { STATE_PROLOGUE, STATE_EPILOGUE, STATE_INTERLUDE,
                STATE_ROW_OPEN, STATE_ROW_CLOSE, STATE_CN_OPEN, STATE_CN_CLOSE, STATE_VALUE, STATE_FINISHED,
@@ -70,14 +70,13 @@ namespace cv
         char braces[5];
 
         void (FormattedImpl::*valueToStr)();
-        void valueToStr8u()  { snprintf(buf, sizeof(buf), "%3d", (int)mtx.ptr<uchar>(row, col)[cn]); }
-        void valueToStr8s()  { snprintf(buf, sizeof(buf), "%3d", (int)mtx.ptr<schar>(row, col)[cn]); }
-        void valueToStr16u() { snprintf(buf, sizeof(buf), "%d", (int)mtx.ptr<ushort>(row, col)[cn]); }
-        void valueToStr16s() { snprintf(buf, sizeof(buf), "%d", (int)mtx.ptr<short>(row, col)[cn]); }
-        void valueToStr32s() { snprintf(buf, sizeof(buf), "%d", mtx.ptr<int>(row, col)[cn]); }
-        void valueToStr32f() { snprintf(buf, sizeof(buf), floatFormat, mtx.ptr<float>(row, col)[cn]); }
-        void valueToStr64f() { snprintf(buf, sizeof(buf), floatFormat, mtx.ptr<double>(row, col)[cn]); }
-        void valueToStr16f() { snprintf(buf, sizeof(buf), floatFormat, (float)mtx.ptr<float16_t>(row, col)[cn]); }
+        void valueToStr8u()  { sprintf(buf, "%3d", (int)mtx.ptr<uchar>(row, col)[cn]); }
+        void valueToStr8s()  { sprintf(buf, "%3d", (int)mtx.ptr<schar>(row, col)[cn]); }
+        void valueToStr16u() { sprintf(buf, "%d", (int)mtx.ptr<ushort>(row, col)[cn]); }
+        void valueToStr16s() { sprintf(buf, "%d", (int)mtx.ptr<short>(row, col)[cn]); }
+        void valueToStr32s() { sprintf(buf, "%d", mtx.ptr<int>(row, col)[cn]); }
+        void valueToStr32f() { sprintf(buf, floatFormat, mtx.ptr<float>(row, col)[cn]); }
+        void valueToStr64f() { sprintf(buf, floatFormat, mtx.ptr<double>(row, col)[cn]); }
         void valueToStrOther() { buf[0] = 0; }
 
     public:
@@ -104,7 +103,7 @@ namespace cv
             }
             else
             {
-                cv_snprintf(floatFormat, sizeof(floatFormat), "%%.%dg", std::min(precision, 20));
+                sprintf(floatFormat, "%%.%dg", std::min(precision, 20));
             }
 
             switch(mtx.depth())
@@ -116,17 +115,16 @@ namespace cv
                 case CV_32S: valueToStr = &FormattedImpl::valueToStr32s; break;
                 case CV_32F: valueToStr = &FormattedImpl::valueToStr32f; break;
                 case CV_64F: valueToStr = &FormattedImpl::valueToStr64f; break;
-                default:     CV_Assert(mtx.depth() == CV_16F);
-                             valueToStr = &FormattedImpl::valueToStr16f;
+                default:     valueToStr = &FormattedImpl::valueToStrOther; break;
             }
         }
 
-        void reset() CV_OVERRIDE
+        void reset()
         {
             state = STATE_PROLOGUE;
         }
 
-        const char* next() CV_OVERRIDE
+        const char* next()
         {
             switch(state)
             {
@@ -151,10 +149,10 @@ namespace cv
                         }
                         else
                             row = 0;
-                        snprintf(buf, sizeof(buf), "\n(:, :, %d) = \n", cn+1);
+                        sprintf(buf, "\n(:, :, %d) = \n", cn+1);
                         return buf;
                     }
-                    snprintf(buf, sizeof(buf), "(:, :, %d) = \n", cn+1);
+                    sprintf(buf, "(:, :, %d) = \n", cn+1);
                     return buf;
                 case STATE_EPILOGUE:
                     state = STATE_FINISHED;
@@ -258,40 +256,34 @@ namespace cv
     class FormatterBase : public Formatter
     {
     public:
-        FormatterBase() : prec16f(4), prec32f(8), prec64f(16), multiline(true) {}
+        FormatterBase() : prec32f(8), prec64f(16), multiline(true) {}
 
-        void set16fPrecision(int p) CV_OVERRIDE
-        {
-            prec16f = p;
-        }
-
-        void set32fPrecision(int p) CV_OVERRIDE
+        void set32fPrecision(int p)
         {
             prec32f = p;
         }
 
-        void set64fPrecision(int p) CV_OVERRIDE
+        void set64fPrecision(int p)
         {
             prec64f = p;
         }
 
-        void setMultiline(bool ml) CV_OVERRIDE
+        void setMultiline(bool ml)
         {
             multiline = ml;
         }
 
     protected:
-        int prec16f;
         int prec32f;
         int prec64f;
         int multiline;
     };
 
-    class DefaultFormatter CV_FINAL : public FormatterBase
+    class DefaultFormatter : public FormatterBase
     {
     public:
 
-        Ptr<Formatted> format(const Mat& mtx) const CV_OVERRIDE
+        Ptr<Formatted> format(const Mat& mtx) const
         {
             char braces[5] = {'\0', '\0', ';', '\0', '\0'};
             return makePtr<FormattedImpl>("[", "]", mtx, &*braces,
@@ -299,11 +291,11 @@ namespace cv
         }
     };
 
-    class MatlabFormatter CV_FINAL : public FormatterBase
+    class MatlabFormatter : public FormatterBase
     {
     public:
 
-        Ptr<Formatted> format(const Mat& mtx) const CV_OVERRIDE
+        Ptr<Formatted> format(const Mat& mtx) const
         {
             char braces[5] = {'\0', '\0', ';', '\0', '\0'};
             return makePtr<FormattedImpl>("", "", mtx, &*braces,
@@ -311,11 +303,11 @@ namespace cv
         }
     };
 
-    class PythonFormatter CV_FINAL : public FormatterBase
+    class PythonFormatter : public FormatterBase
     {
     public:
 
-        Ptr<Formatted> format(const Mat& mtx) const CV_OVERRIDE
+        Ptr<Formatted> format(const Mat& mtx) const
         {
             char braces[5] = {'[', ']', ',', '[', ']'};
             if (mtx.cols == 1)
@@ -325,15 +317,15 @@ namespace cv
         }
     };
 
-    class NumpyFormatter CV_FINAL : public FormatterBase
+    class NumpyFormatter : public FormatterBase
     {
     public:
 
-        Ptr<Formatted> format(const Mat& mtx) const CV_OVERRIDE
+        Ptr<Formatted> format(const Mat& mtx) const
         {
             static const char* numpyTypes[] =
             {
-                "uint8", "int8", "uint16", "int16", "int32", "float32", "float64", "float16"
+                "uint8", "int8", "uint16", "int16", "int32", "float32", "float64", "uint64"
             };
             char braces[5] = {'[', ']', ',', '[', ']'};
             if (mtx.cols == 1)
@@ -344,11 +336,11 @@ namespace cv
         }
     };
 
-    class CSVFormatter CV_FINAL : public FormatterBase
+    class CSVFormatter : public FormatterBase
     {
     public:
 
-        Ptr<Formatted> format(const Mat& mtx) const CV_OVERRIDE
+        Ptr<Formatted> format(const Mat& mtx) const
         {
             char braces[5] = {'\0', '\0', '\0', '\0', '\0'};
             return makePtr<FormattedImpl>(String(),
@@ -357,11 +349,11 @@ namespace cv
         }
     };
 
-    class CFormatter CV_FINAL : public FormatterBase
+    class CFormatter : public FormatterBase
     {
     public:
 
-        Ptr<Formatted> format(const Mat& mtx) const CV_OVERRIDE
+        Ptr<Formatted> format(const Mat& mtx) const
         {
             char braces[5] = {'\0', '\0', ',', '\0', '\0'};
             return makePtr<FormattedImpl>("{", "}", mtx, &*braces,
@@ -372,7 +364,7 @@ namespace cv
     Formatted::~Formatted() {}
     Formatter::~Formatter() {}
 
-    Ptr<Formatter> Formatter::get(Formatter::FormatType fmt)
+    Ptr<Formatter> Formatter::get(int fmt)
     {
         switch(fmt)
         {

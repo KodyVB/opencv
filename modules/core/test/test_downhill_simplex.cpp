@@ -39,8 +39,9 @@
 //
 //M*/
 #include "test_precomp.hpp"
-
-namespace opencv_test { namespace {
+#include <cstdlib>
+#include <cmath>
+#include <algorithm>
 
 static void mytest(cv::Ptr<cv::DownhillSolver> solver,cv::Ptr<cv::MinProblemSolver::Function> ptr_F,cv::Mat& x,cv::Mat& step,
         cv::Mat& etalon_x,double etalon_res){
@@ -51,7 +52,7 @@ static void mytest(cv::Ptr<cv::DownhillSolver> solver,cv::Ptr<cv::MinProblemSolv
     solver->getInitStep(settedStep);
     ASSERT_TRUE(settedStep.rows==1 && settedStep.cols==ndim);
     ASSERT_TRUE(std::equal(step.begin<double>(),step.end<double>(),settedStep.begin<double>()));
-    std::cout<<"step set:\n\t"<<step<<std::endl;
+    std::cout<<"step setted:\n\t"<<step<<std::endl;
     double res=solver->minimize(x);
     std::cout<<"res:\n\t"<<res<<std::endl;
     std::cout<<"x:\n\t"<<x<<std::endl;
@@ -102,5 +103,3 @@ TEST(Core_DownhillSolver, regression_basic){
     }
 #endif
 }
-
-}} // namespace

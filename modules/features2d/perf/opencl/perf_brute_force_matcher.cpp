@@ -48,7 +48,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 //////////////////// BruteForceMatch /////////////////

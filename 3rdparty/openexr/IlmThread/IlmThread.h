@@ -1,10 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2005-2012, Industrial Light & Magic, a division of Lucas
+// Copyright (c) 2005, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -91,25 +91,29 @@
 //-----------------------------------------------------------------------------
 
 #include "IlmBaseConfig.h"
-#include "IlmThreadExport.h"
-#include "IlmThreadNamespace.h"
 
-#ifdef ILMBASE_FORCE_CXX03
-#   if defined _WIN32 || defined _WIN64
-#       ifdef NOMINMAX
-#          undef NOMINMAX
-#       endif
-#       define NOMINMAX
-#       include <windows.h>
-#       include <process.h>
-#   elif HAVE_PTHREAD
-#      include <pthread.h>
-#   endif
-#else
-#   include <thread>
+#if defined _WIN32 || defined _WIN64
+    #ifdef NOMINMAX
+        #undef NOMINMAX
+    #endif
+    #define NOMINMAX
+    #include <windows.h>
+    #include <process.h>
+#elif HAVE_PTHREAD
+    #include <pthread.h>
 #endif
 
-ILMTHREAD_INTERNAL_NAMESPACE_HEADER_ENTER
+#if defined(OPENEXR_DLL) && !defined(ZENO_STATIC)
+    #ifdef ILMTHREAD_EXPORTS
+    #define ILMTHREAD_EXPORT __declspec(dllexport)
+    #else
+    #define ILMTHREAD_EXPORT __declspec(dllimport)
+    #endif
+#else
+    #define ILMTHREAD_EXPORT
+#endif
+
+namespace IlmThread {
 
 //
 // Query function to determine if the current platform supports
@@ -119,35 +123,29 @@ ILMTHREAD_INTERNAL_NAMESPACE_HEADER_ENTER
 ILMTHREAD_EXPORT bool supportsThreads ();
 
 
-class Thread
+class ILMTHREAD_EXPORT Thread
 {
   public:
 
-    ILMTHREAD_EXPORT Thread ();
-    ILMTHREAD_EXPORT virtual ~Thread ();
+    Thread ();
+    virtual ~Thread ();
 
-    ILMTHREAD_EXPORT void         start ();
-    ILMTHREAD_EXPORT virtual void run () = 0;
+    void		start ();
+    virtual void	run () = 0;
 
   private:
 
-#ifdef ILMBASE_FORCE_CXX03
-#   if defined _WIN32 || defined _WIN64
-	HANDLE _thread;
-#   elif HAVE_PTHREAD
-	pthread_t _thread;
-#   endif
+    #if defined _WIN32 || defined _WIN64
+    HANDLE _thread;
+    #elif HAVE_PTHREAD
+    pthread_t _thread;
+    #endif
+
     void operator = (const Thread& t);	// not implemented
     Thread (const Thread& t);		// not implemented
-#else
-    std::thread _thread;
-
-    Thread &operator= (const Thread& t) = delete;
-    Thread (const Thread& t) = delete;
-#endif
 };
 
 
-ILMTHREAD_INTERNAL_NAMESPACE_HEADER_EXIT
+} // namespace IlmThread
 
-#endif // INCLUDED_ILM_THREAD_H
+#endif

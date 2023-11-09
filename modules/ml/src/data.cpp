@@ -43,8 +43,6 @@
 #include <algorithm>
 #include <iterator>
 
-#include <opencv2/core/utils/logger.hpp>
-
 namespace cv { namespace ml {
 
 static const float MISSED_VAL = TrainData::missingValue();
@@ -52,66 +50,76 @@ static const int VAR_MISSED = VAR_ORDERED;
 
 TrainData::~TrainData() {}
 
-Mat TrainData::getSubVector(const Mat& vec, const Mat& idx)
+Mat TrainData::getTestSamples() const
 {
-    if (!(vec.cols == 1 || vec.rows == 1))
-        CV_LOG_WARNING(NULL, "'getSubVector(const Mat& vec, const Mat& idx)' call with non-1D input is deprecated. It is not designed to work with 2D matrixes (especially with 'cv::ml::COL_SAMPLE' layout).");
-    return getSubMatrix(vec, idx, vec.rows == 1 ? cv::ml::COL_SAMPLE : cv::ml::ROW_SAMPLE);
+    Mat idx = getTestSampleIdx();
+    Mat samples = getSamples();
+    return idx.empty() ? Mat() : getSubVector(samples, idx);
 }
 
-template<typename T>
-Mat getSubMatrixImpl(const Mat& m, const Mat& idx, int layout)
+Mat TrainData::getSubVector(const Mat& vec, const Mat& idx)
 {
-    int nidx = idx.checkVector(1, CV_32S);
-    int dims = m.cols, nsamples = m.rows;
+    if( idx.empty() )
+        return vec;
+    int i, j, n = idx.checkVector(1, CV_32S);
+    int type = vec.type();
+    CV_Assert( type == CV_32S || type == CV_32F || type == CV_64F );
+    int dims = 1, m;
 
-    Mat subm;
-    if (layout == COL_SAMPLE)
+    if( vec.cols == 1 || vec.rows == 1 )
     {
-        std::swap(dims, nsamples);
-        subm.create(dims, nidx, m.type());
+        dims = 1;
+        m = vec.cols + vec.rows - 1;
     }
     else
     {
-        subm.create(nidx, dims, m.type());
+        dims = vec.cols;
+        m = vec.rows;
     }
 
-    for (int i = 0; i < nidx; i++)
-    {
-        int k = idx.at<int>(i); CV_CheckGE(k, 0, "Bad idx"); CV_CheckLT(k, nsamples, "Bad idx or layout");
-        if (dims == 1)
+    Mat subvec;
+
+    if( vec.cols == m )
+        subvec.create(dims, n, type);
+    else
+        subvec.create(n, dims, type);
+    if( type == CV_32S )
+        for( i = 0; i < n; i++ )
         {
-            subm.at<T>(i) = m.at<T>(k);  // at() has "transparent" access for 1D col-based / row-based vectors.
+            int k = idx.at<int>(i);
+            CV_Assert( 0 <= k && k < m );
+            if( dims == 1 )
+                subvec.at<int>(i) = vec.at<int>(k);
+            else
+                for( j = 0; j < dims; j++ )
+                    subvec.at<int>(i, j) = vec.at<int>(k, j);
         }
-        else if (layout == COL_SAMPLE)
+    else if( type == CV_32F )
+        for( i = 0; i < n; i++ )
         {
-            for (int j = 0; j < dims; j++)
-                subm.at<T>(j, i) = m.at<T>(j, k);
+            int k = idx.at<int>(i);
+            CV_Assert( 0 <= k && k < m );
+            if( dims == 1 )
+                subvec.at<float>(i) = vec.at<float>(k);
+            else
+                for( j = 0; j < dims; j++ )
+                    subvec.at<float>(i, j) = vec.at<float>(k, j);
         }
-        else
+    else
+        for( i = 0; i < n; i++ )
         {
-            for (int j = 0; j < dims; j++)
-                subm.at<T>(i, j) = m.at<T>(k, j);
+            int k = idx.at<int>(i);
+            CV_Assert( 0 <= k && k < m );
+            if( dims == 1 )
+                subvec.at<double>(i) = vec.at<double>(k);
+            else
+                for( j = 0; j < dims; j++ )
+                    subvec.at<double>(i, j) = vec.at<double>(k, j);
         }
-    }
-    return subm;
+    return subvec;
 }
 
-Mat TrainData::getSubMatrix(const Mat& m, const Mat& idx, int layout)
-{
-    if (idx.empty())
-        return m;
-    int type = m.type();
-    CV_CheckType(type, type == CV_32S || type == CV_32F || type == CV_64F, "");
-    if (type == CV_32S || type == CV_32F)  // 32-bit
-        return getSubMatrixImpl<int>(m, idx, layout);
-    if (type == CV_64F)  // 64-bit
-        return getSubMatrixImpl<double>(m, idx, layout);
-    CV_Error(Error::StsInternal, "");
-}
-
-
-class TrainDataImpl CV_FINAL : public TrainData
+class TrainDataImpl : public TrainData
 {
 public:
     typedef std::map<String, int> MapType;
@@ -124,81 +132,75 @@ public:
 
     virtual ~TrainDataImpl() { closeFile(); }
 
-    int getLayout() const CV_OVERRIDE { return layout; }
-    int getNSamples() const CV_OVERRIDE
+    int getLayout() const { return layout; }
+    int getNSamples() const
     {
         return !sampleIdx.empty() ? (int)sampleIdx.total() :
                layout == ROW_SAMPLE ? samples.rows : samples.cols;
     }
-    int getNTrainSamples() const CV_OVERRIDE
+    int getNTrainSamples() const
     {
         return !trainSampleIdx.empty() ? (int)trainSampleIdx.total() : getNSamples();
     }
-    int getNTestSamples() const CV_OVERRIDE
+    int getNTestSamples() const
     {
         return !testSampleIdx.empty() ? (int)testSampleIdx.total() : 0;
     }
-    int getNVars() const CV_OVERRIDE
+    int getNVars() const
     {
         return !varIdx.empty() ? (int)varIdx.total() : getNAllVars();
     }
-    int getNAllVars() const CV_OVERRIDE
+    int getNAllVars() const
     {
         return layout == ROW_SAMPLE ? samples.cols : samples.rows;
     }
 
-    Mat getTestSamples() const CV_OVERRIDE
-    {
-        Mat idx = getTestSampleIdx();
-        return idx.empty() ? Mat() : getSubMatrix(samples, idx, getLayout());
-    }
-
-    Mat getSamples() const CV_OVERRIDE { return samples; }
-    Mat getResponses() const CV_OVERRIDE { return responses; }
-    Mat getMissing() const CV_OVERRIDE { return missing; }
-    Mat getVarIdx() const CV_OVERRIDE { return varIdx; }
-    Mat getVarType() const CV_OVERRIDE { return varType; }
-    int getResponseType() const CV_OVERRIDE
+    Mat getSamples() const { return samples; }
+    Mat getResponses() const { return responses; }
+    Mat getMissing() const { return missing; }
+    Mat getVarIdx() const { return varIdx; }
+    Mat getVarType() const { return varType; }
+    int getResponseType() const
     {
         return classLabels.empty() ? VAR_ORDERED : VAR_CATEGORICAL;
     }
-    Mat getTrainSampleIdx() const CV_OVERRIDE { return !trainSampleIdx.empty() ? trainSampleIdx : sampleIdx; }
-    Mat getTestSampleIdx() const CV_OVERRIDE { return testSampleIdx; }
-    Mat getSampleWeights() const CV_OVERRIDE
+    Mat getTrainSampleIdx() const { return !trainSampleIdx.empty() ? trainSampleIdx : sampleIdx; }
+    Mat getTestSampleIdx() const { return testSampleIdx; }
+    Mat getSampleWeights() const
     {
         return sampleWeights;
     }
-    Mat getTrainSampleWeights() const CV_OVERRIDE
+    Mat getTrainSampleWeights() const
     {
-        return getSubVector(sampleWeights, getTrainSampleIdx());  // 1D-vector
+        return getSubVector(sampleWeights, getTrainSampleIdx());
     }
-    Mat getTestSampleWeights() const CV_OVERRIDE
-    {
-        Mat idx = getTestSampleIdx();
-        return idx.empty() ? Mat() : getSubVector(sampleWeights, idx);  // 1D-vector
-    }
-    Mat getTrainResponses() const CV_OVERRIDE
-    {
-        return getSubMatrix(responses, getTrainSampleIdx(), cv::ml::ROW_SAMPLE);  // col-based responses are transposed in setData()
-    }
-    Mat getTrainNormCatResponses() const CV_OVERRIDE
-    {
-        return getSubMatrix(normCatResponses, getTrainSampleIdx(), cv::ml::ROW_SAMPLE);  // like 'responses'
-    }
-    Mat getTestResponses() const CV_OVERRIDE
+    Mat getTestSampleWeights() const
     {
         Mat idx = getTestSampleIdx();
-        return idx.empty() ? Mat() : getSubMatrix(responses, idx, cv::ml::ROW_SAMPLE);  // col-based responses are transposed in setData()
+        return idx.empty() ? Mat() : getSubVector(sampleWeights, idx);
     }
-    Mat getTestNormCatResponses() const CV_OVERRIDE
+    Mat getTrainResponses() const
+    {
+        return getSubVector(responses, getTrainSampleIdx());
+    }
+    Mat getTrainNormCatResponses() const
+    {
+        return getSubVector(normCatResponses, getTrainSampleIdx());
+    }
+    Mat getTestResponses() const
     {
         Mat idx = getTestSampleIdx();
-        return idx.empty() ? Mat() : getSubMatrix(normCatResponses, idx, cv::ml::ROW_SAMPLE);  // like 'responses'
+        return idx.empty() ? Mat() : getSubVector(responses, idx);
     }
-    Mat getNormCatResponses() const CV_OVERRIDE { return normCatResponses; }
-    Mat getClassLabels() const CV_OVERRIDE { return classLabels; }
+    Mat getTestNormCatResponses() const
+    {
+        Mat idx = getTestSampleIdx();
+        return idx.empty() ? Mat() : getSubVector(normCatResponses, idx);
+    }
+    Mat getNormCatResponses() const { return normCatResponses; }
+    Mat getClassLabels() const { return classLabels; }
     Mat getClassCounters() const { return classCounters; }
-    int getCatCount(int vi) const CV_OVERRIDE
+    int getCatCount(int vi) const
     {
         int n = (int)catOfs.total();
         CV_Assert( 0 <= vi && vi < n );
@@ -206,10 +208,10 @@ public:
         return ofs[1] - ofs[0];
     }
 
-    Mat getCatOfs() const CV_OVERRIDE { return catOfs; }
-    Mat getCatMap() const CV_OVERRIDE { return catMap; }
+    Mat getCatOfs() const { return catOfs; }
+    Mat getCatMap() const { return catMap; }
 
-    Mat getDefaultSubstValues() const CV_OVERRIDE { return missingSubst; }
+    Mat getDefaultSubstValues() const { return missingSubst; }
 
     void closeFile() { if(file) fclose(file); file=0; }
     void clear()
@@ -333,7 +335,7 @@ public:
         CatMapHash ofshash;
 
         AutoBuffer<uchar> buf(nsamples);
-        Mat non_missing(layout == ROW_SAMPLE ? Size(1, nsamples) : Size(nsamples, 1), CV_8U, buf.data());
+        Mat non_missing(layout == ROW_SAMPLE ? Size(1, nsamples) : Size(nsamples, 1), CV_8U, (uchar*)buf);
         bool haveMissing = !missing.empty();
         if( haveMissing )
         {
@@ -401,7 +403,7 @@ public:
             Mat(tempCatMap).copyTo(catMap);
         }
 
-        if( noutputvars > 0 && varType.at<uchar>(ninputvars) == VAR_CATEGORICAL )
+        if( varType.at<uchar>(ninputvars) == VAR_CATEGORICAL )
         {
             preprocessCategorical(responses, &normCatResponses, labels, &counters, sortbuf);
             Mat(labels).copyTo(classLabels);
@@ -765,13 +767,13 @@ public:
             CV_Error( CV_StsBadArg, "type of some variables is not specified" );
     }
 
-    void setTrainTestSplitRatio(double ratio, bool shuffle) CV_OVERRIDE
+    void setTrainTestSplitRatio(double ratio, bool shuffle)
     {
         CV_Assert( 0. <= ratio && ratio <= 1. );
         setTrainTestSplit(cvRound(getNSamples()*ratio), shuffle);
     }
 
-    void setTrainTestSplit(int count, bool shuffle) CV_OVERRIDE
+    void setTrainTestSplit(int count, bool shuffle)
     {
         int i, nsamples = getNSamples();
         CV_Assert( 0 <= count && count < nsamples );
@@ -808,7 +810,7 @@ public:
         }
     }
 
-    void shuffleTrainTest() CV_OVERRIDE
+    void shuffleTrainTest()
     {
         if( !trainSampleIdx.empty() && !testSampleIdx.empty() )
         {
@@ -842,7 +844,7 @@ public:
 
     Mat getTrainSamples(int _layout,
                         bool compressSamples,
-                        bool compressVars) const CV_OVERRIDE
+                        bool compressVars) const
     {
         if( samples.empty() )
             return samples;
@@ -882,7 +884,7 @@ public:
         return dsamples;
     }
 
-    void getValues( int vi, InputArray _sidx, float* values ) const CV_OVERRIDE
+    void getValues( int vi, InputArray _sidx, float* values ) const
     {
         Mat sidx = _sidx.getMat();
         int i, n = sidx.checkVector(1, CV_32S), nsamples = getNSamples();
@@ -904,7 +906,7 @@ public:
             if( s )
             {
                 j = s[i];
-                CV_Assert( 0 <= j && j < ((layout == ROW_SAMPLE) ? samples.rows : samples.cols) );
+                CV_Assert( 0 <= j && j < nsamples );
             }
             values[i] = src[j*sstep];
             if( values[i] == MISSED_VAL )
@@ -912,7 +914,7 @@ public:
         }
     }
 
-    void getNormCatValues( int vi, InputArray _sidx, int* values ) const CV_OVERRIDE
+    void getNormCatValues( int vi, InputArray _sidx, int* values ) const
     {
         float* fvalues = (float*)values;
         getValues(vi, _sidx, fvalues);
@@ -958,7 +960,7 @@ public:
         }
     }
 
-    void getSample(InputArray _vidx, int sidx, float* buf) const CV_OVERRIDE
+    void getSample(InputArray _vidx, int sidx, float* buf) const
     {
         CV_Assert(buf != 0 && 0 <= sidx && sidx < getNSamples());
         Mat vidx = _vidx.getMat();
@@ -985,27 +987,6 @@ public:
         }
     }
 
-    void getNames(std::vector<String>& names) const CV_OVERRIDE
-    {
-        size_t n = nameMap.size();
-        TrainDataImpl::MapType::const_iterator it = nameMap.begin(),
-                                               it_end = nameMap.end();
-        names.resize(n+1);
-        names[0] = "?";
-        for( ; it != it_end; ++it )
-        {
-            String s = it->first;
-            int label = it->second;
-            CV_Assert( label > 0 && label <= (int)n );
-            names[label] = s;
-        }
-    }
-
-    Mat getVarSymbolFlags() const CV_OVERRIDE
-    {
-        return varSymbolFlags;
-    }
-
     FILE* file;
     int layout;
     Mat samples, missing, varType, varIdx, varSymbolFlags, responses, missingSubst;
@@ -1015,6 +996,30 @@ public:
     MapType nameMap;
 };
 
+void TrainData::getNames(std::vector<String>& names) const
+{
+    const TrainDataImpl* impl = dynamic_cast<const TrainDataImpl*>(this);
+    CV_Assert(impl != 0);
+    size_t n = impl->nameMap.size();
+    TrainDataImpl::MapType::const_iterator it = impl->nameMap.begin(),
+                                           it_end = impl->nameMap.end();
+    names.resize(n+1);
+    names[0] = "?";
+    for( ; it != it_end; ++it )
+    {
+        String s = it->first;
+        int label = it->second;
+        CV_Assert( label > 0 && label <= (int)n );
+        names[label] = s;
+    }
+}
+
+Mat TrainData::getVarSymbolFlags() const
+{
+    const TrainDataImpl* impl = dynamic_cast<const TrainDataImpl*>(this);
+    CV_Assert(impl != 0);
+    return impl->varSymbolFlags;
+}
 
 Ptr<TrainData> TrainData::loadFromCSV(const String& filename,
                                       int headerLines,
@@ -1023,7 +1028,6 @@ Ptr<TrainData> TrainData::loadFromCSV(const String& filename,
                                       const String& varTypeSpec,
                                       char delimiter, char missch)
 {
-    CV_TRACE_FUNCTION_SKIP_NESTED();
     Ptr<TrainDataImpl> td = makePtr<TrainDataImpl>();
     if(!td->loadCSV(filename, headerLines, responseStartIdx, responseEndIdx, varTypeSpec, delimiter, missch))
         td.release();
@@ -1034,7 +1038,6 @@ Ptr<TrainData> TrainData::create(InputArray samples, int layout, InputArray resp
                                  InputArray varIdx, InputArray sampleIdx, InputArray sampleWeights,
                                  InputArray varType)
 {
-    CV_TRACE_FUNCTION_SKIP_NESTED();
     Ptr<TrainDataImpl> td = makePtr<TrainDataImpl>();
     td->setData(samples, layout, responses, varIdx, sampleIdx, sampleWeights, varType, noArray());
     return td;

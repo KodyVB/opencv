@@ -44,7 +44,7 @@
 extern "C" {
 #endif
 
-#if !defined(_WIN32) || defined(__MINGW32__)
+#if !defined(WIN32) || defined(__MINGW32__)
 // some versions of FFMPEG assume a C99 compiler, and don't define INT64_C
 #include <stdint.h>
 
@@ -60,7 +60,6 @@ extern "C" {
 #include <errno.h>
 #endif
 
-#include <libavcodec/version.h>
 #include <libavformat/avformat.h>
 
 #ifdef __cplusplus

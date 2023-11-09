@@ -9,7 +9,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 struct BufferPoolState
@@ -127,6 +127,6 @@ OCL_PERF_TEST_P(BufferPoolFixture, BufferPool_UMatIntegral10, Bool())
     SANITY_CHECK_NOTHING();
 }
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

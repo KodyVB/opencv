@@ -42,12 +42,10 @@
 //
 //M*/
 
-#include "precomp.hpp"
 #include "hal_internal.hpp"
 
 #ifdef HAVE_LAPACK
 
-#include <complex.h>
 #include "opencv_lapack.h"
 
 #include <cmath>
@@ -64,18 +62,7 @@
 #define HAL_LU_SMALL_MATRIX_THRESH 100
 #define HAL_CHOLESKY_SMALL_MATRIX_THRESH 100
 
-#if defined(__clang__) && defined(__has_feature)
-#if __has_feature(memory_sanitizer)
-#include <sanitizer/msan_interface.h>
-#define CV_ANNOTATE_MEMORY_IS_INITIALIZED(address, size) \
-__msan_unpoison(address, size)
-#endif
-#endif
-#ifndef CV_ANNOTATE_MEMORY_IS_INITIALIZED
-#define CV_ANNOTATE_MEMORY_IS_INITIALIZED(address, size) do { } while(0)
-#endif
-
-//lapack stores matrices in column-major order so transposing is needed everywhere
+//lapack stores matrices in column-major order so transposing is neded everywhere
 template <typename fptype> static inline void
 transpose_square_inplace(fptype *src, size_t src_ld, size_t m)
 {
@@ -111,7 +98,7 @@ set_value(fptype *dst, size_t dst_ld, fptype value, size_t m, size_t n)
 template <typename fptype> static inline int
 lapack_LU(fptype* a, size_t a_step, int m, fptype* b, size_t b_step, int n, int* info)
 {
-    int lda = (int)(a_step / sizeof(fptype)), sign = 0;
+    int lda = a_step / sizeof(fptype), sign = 0;
     int* piv = new int[m];
 
     transpose_square_inplace(a, lda, m);
@@ -127,7 +114,7 @@ lapack_LU(fptype* a, size_t a_step, int m, fptype* b, size_t b_step, int n, int*
         }
         else
         {
-            int ldb = (int)(b_step / sizeof(fptype));
+            int ldb = b_step / sizeof(fptype);
             fptype* tmpB = new fptype[m*n];
 
             transpose(b, ldb, tmpB, m, m, n);
@@ -166,7 +153,7 @@ template <typename fptype> static inline int
 lapack_Cholesky(fptype* a, size_t a_step, int m, fptype* b, size_t b_step, int n, bool* info)
 {
     int lapackStatus = 0;
-    int lda = (int)(a_step / sizeof(fptype));
+    int lda = a_step / sizeof(fptype);
     char L[] = {'L', '\0'};
 
     if(b)
@@ -174,20 +161,20 @@ lapack_Cholesky(fptype* a, size_t a_step, int m, fptype* b, size_t b_step, int n
         if(n == 1 && b_step == sizeof(fptype))
         {
             if(typeid(fptype) == typeid(float))
-                OCV_LAPACK_FUNC(sposv)(L, &m, &n, (float*)a, &lda, (float*)b, &m, &lapackStatus);
+                sposv_(L, &m, &n, (float*)a, &lda, (float*)b, &m, &lapackStatus);
             else if(typeid(fptype) == typeid(double))
-                OCV_LAPACK_FUNC(dposv)(L, &m, &n, (double*)a, &lda, (double*)b, &m, &lapackStatus);
+                dposv_(L, &m, &n, (double*)a, &lda, (double*)b, &m, &lapackStatus);
         }
         else
         {
-            int ldb = (int)(b_step / sizeof(fptype));
+            int ldb = b_step / sizeof(fptype);
             fptype* tmpB = new fptype[m*n];
             transpose(b, ldb, tmpB, m, m, n);
 
             if(typeid(fptype) == typeid(float))
-                OCV_LAPACK_FUNC(sposv)(L, &m, &n, (float*)a, &lda, (float*)tmpB, &m, &lapackStatus);
+                sposv_(L, &m, &n, (float*)a, &lda, (float*)tmpB, &m, &lapackStatus);
             else if(typeid(fptype) == typeid(double))
-                OCV_LAPACK_FUNC(dposv)(L, &m, &n, (double*)a, &lda, (double*)tmpB, &m, &lapackStatus);
+                dposv_(L, &m, &n, (double*)a, &lda, (double*)tmpB, &m, &lapackStatus);
 
             transpose(tmpB, m, b, ldb, n, m);
             delete[] tmpB;
@@ -196,9 +183,9 @@ lapack_Cholesky(fptype* a, size_t a_step, int m, fptype* b, size_t b_step, int n
     else
     {
         if(typeid(fptype) == typeid(float))
-            OCV_LAPACK_FUNC(spotrf)(L, &m, (float*)a, &lda, &lapackStatus);
+            spotrf_(L, &m, (float*)a, &lda, &lapackStatus);
         else if(typeid(fptype) == typeid(double))
-            OCV_LAPACK_FUNC(dpotrf)(L, &m, (double*)a, &lda, &lapackStatus);
+            dpotrf_(L, &m, (double*)a, &lda, &lapackStatus);
     }
 
     if(lapackStatus == 0) *info = true;
@@ -210,9 +197,9 @@ lapack_Cholesky(fptype* a, size_t a_step, int m, fptype* b, size_t b_step, int n
 template <typename fptype> static inline int
 lapack_SVD(fptype* a, size_t a_step, fptype *w, fptype* u, size_t u_step, fptype* vt, size_t v_step, int m, int n, int flags, int* info)
 {
-    int lda = (int)(a_step / sizeof(fptype));
-    int ldv = (int)(v_step / sizeof(fptype));
-    int ldu = (int)(u_step / sizeof(fptype));
+    int lda = a_step / sizeof(fptype);
+    int ldv = v_step / sizeof(fptype);
+    int ldu = u_step / sizeof(fptype);
     int lwork = -1;
     int* iworkBuf = new int[8*std::min(m, n)];
     fptype work1 = 0;
@@ -238,32 +225,17 @@ lapack_SVD(fptype* a, size_t a_step, fptype *w, fptype* u, size_t u_step, fptype
     }
 
     if(typeid(fptype) == typeid(float))
-        OCV_LAPACK_FUNC(sgesdd)(mode, &m, &n, (float*)a, &lda, (float*)w, (float*)u, &ldu, (float*)vt, &ldv, (float*)&work1, &lwork, iworkBuf, info);
+        sgesdd_(mode, &m, &n, (float*)a, &lda, (float*)w, (float*)u, &ldu, (float*)vt, &ldv, (float*)&work1, &lwork, iworkBuf, info);
     else if(typeid(fptype) == typeid(double))
-        OCV_LAPACK_FUNC(dgesdd)(mode, &m, &n, (double*)a, &lda, (double*)w, (double*)u, &ldu, (double*)vt, &ldv, (double*)&work1, &lwork, iworkBuf, info);
+        dgesdd_(mode, &m, &n, (double*)a, &lda, (double*)w, (double*)u, &ldu, (double*)vt, &ldv, (double*)&work1, &lwork, iworkBuf, info);
 
     lwork = (int)round(work1); //optimal buffer size
     fptype* buffer = new fptype[lwork + 1];
 
-    // Make sure MSAN sees the memory as having been written.
-    // MSAN does not think it has been written because a different language is called.
-    // Note: we do this here because if dgesdd is C++, MSAN errors can be reported within it.
-    CV_ANNOTATE_MEMORY_IS_INITIALIZED(buffer, sizeof(fptype) * (lwork + 1));
-
     if(typeid(fptype) == typeid(float))
-        OCV_LAPACK_FUNC(sgesdd)(mode, &m, &n, (float*)a, &lda, (float*)w, (float*)u, &ldu, (float*)vt, &ldv, (float*)buffer, &lwork, iworkBuf, info);
+        sgesdd_(mode, &m, &n, (float*)a, &lda, (float*)w, (float*)u, &ldu, (float*)vt, &ldv, (float*)buffer, &lwork, iworkBuf, info);
     else if(typeid(fptype) == typeid(double))
-        OCV_LAPACK_FUNC(dgesdd)(mode, &m, &n, (double*)a, &lda, (double*)w, (double*)u, &ldu, (double*)vt, &ldv, (double*)buffer, &lwork, iworkBuf, info);
-
-    // Make sure MSAN sees the memory as having been written.
-    // MSAN does not think it has been written because a different language was called.
-    CV_ANNOTATE_MEMORY_IS_INITIALIZED(a, a_step * n);
-    if (u)
-      CV_ANNOTATE_MEMORY_IS_INITIALIZED(u, u_step * m);
-    if (vt)
-      CV_ANNOTATE_MEMORY_IS_INITIALIZED(vt, v_step * n);
-    if (w)
-      CV_ANNOTATE_MEMORY_IS_INITIALIZED(w, sizeof(fptype) * std::min(m, n));
+        dgesdd_(mode, &m, &n, (double*)a, &lda, (double*)w, (double*)u, &ldu, (double*)vt, &ldv, (double*)buffer, &lwork, iworkBuf, info);
 
     if(!(flags & CV_HAL_SVD_NO_UV))
         transpose_square_inplace(vt, ldv, n);
@@ -284,7 +256,7 @@ lapack_SVD(fptype* a, size_t a_step, fptype *w, fptype* u, size_t u_step, fptype
 template <typename fptype> static inline int
 lapack_QR(fptype* a, size_t a_step, int m, int n, int k, fptype* b, size_t b_step, fptype* dst, int* info)
 {
-    int lda = (int)(a_step / sizeof(fptype));
+    int lda = a_step / sizeof(fptype);
     char mode[] = { 'N', '\0' };
     if(m < n)
         return CV_HAL_ERROR_NOT_IMPLEMENTED;
@@ -314,39 +286,39 @@ lapack_QR(fptype* a, size_t a_step, int m, int n, int k, fptype* b, size_t b_ste
         if (k == 1 && b_step == sizeof(fptype))
         {
             if (typeid(fptype) == typeid(float))
-                OCV_LAPACK_FUNC(sgels)(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)b, &m, (float*)&work1, &lwork, info);
+                sgels_(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)b, &m, (float*)&work1, &lwork, info);
             else if (typeid(fptype) == typeid(double))
-                OCV_LAPACK_FUNC(dgels)(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)b, &m, (double*)&work1, &lwork, info);
+                dgels_(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)b, &m, (double*)&work1, &lwork, info);
 
-            lwork = cvRound(work1); //optimal buffer size
+            lwork = (int)round(work1); //optimal buffer size
             std::vector<fptype> workBufMemHolder(lwork + 1);
             fptype* buffer = &workBufMemHolder.front();
 
             if (typeid(fptype) == typeid(float))
-                OCV_LAPACK_FUNC(sgels)(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)b, &m, (float*)buffer, &lwork, info);
+                sgels_(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)b, &m, (float*)buffer, &lwork, info);
             else if (typeid(fptype) == typeid(double))
-                OCV_LAPACK_FUNC(dgels)(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)b, &m, (double*)buffer, &lwork, info);
+                dgels_(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)b, &m, (double*)buffer, &lwork, info);
         }
         else
         {
             std::vector<fptype> tmpBMemHolder(m*k);
             fptype* tmpB = &tmpBMemHolder.front();
-            int ldb = (int)(b_step / sizeof(fptype));
+            int ldb = b_step / sizeof(fptype);
             transpose(b, ldb, tmpB, m, m, k);
 
             if (typeid(fptype) == typeid(float))
-                OCV_LAPACK_FUNC(sgels)(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)tmpB, &m, (float*)&work1, &lwork, info);
+                sgels_(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)tmpB, &m, (float*)&work1, &lwork, info);
             else if (typeid(fptype) == typeid(double))
-                OCV_LAPACK_FUNC(dgels)(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)tmpB, &m, (double*)&work1, &lwork, info);
+                dgels_(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)tmpB, &m, (double*)&work1, &lwork, info);
 
-            lwork = cvRound(work1); //optimal buffer size
+            lwork = (int)round(work1); //optimal buffer size
             std::vector<fptype> workBufMemHolder(lwork + 1);
             fptype* buffer = &workBufMemHolder.front();
 
             if (typeid(fptype) == typeid(float))
-                OCV_LAPACK_FUNC(sgels)(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)tmpB, &m, (float*)buffer, &lwork, info);
+                sgels_(mode, &m, &n, &k, (float*)tmpA, &ldtmpA, (float*)tmpB, &m, (float*)buffer, &lwork, info);
             else if (typeid(fptype) == typeid(double))
-                OCV_LAPACK_FUNC(dgels)(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)tmpB, &m, (double*)buffer, &lwork, info);
+                dgels_(mode, &m, &n, &k, (double*)tmpA, &ldtmpA, (double*)tmpB, &m, (double*)buffer, &lwork, info);
 
             transpose(tmpB, m, b, ldb, k, m);
         }
@@ -358,7 +330,7 @@ lapack_QR(fptype* a, size_t a_step, int m, int n, int k, fptype* b, size_t b_ste
         else if (typeid(fptype) == typeid(double))
             dgeqrf_(&m, &n, (double*)tmpA, &ldtmpA, (double*)dst, (double*)&work1, &lwork, info);
 
-        lwork = cvRound(work1); //optimal buffer size
+        lwork = (int)round(work1); //optimal buffer size
         std::vector<fptype> workBufMemHolder(lwork + 1);
         fptype* buffer = &workBufMemHolder.front();
 
@@ -368,7 +340,6 @@ lapack_QR(fptype* a, size_t a_step, int m, int n, int k, fptype* b, size_t b_ste
             dgeqrf_(&m, &n, (double*)tmpA, &ldtmpA, (double*)dst, (double*)buffer, &lwork, info);
     }
 
-    CV_ANNOTATE_MEMORY_IS_INITIALIZED(info, sizeof(int));
     if (m == n)
         transpose_square_inplace(a, lda, m);
     else
@@ -386,10 +357,10 @@ template <typename fptype> static inline int
 lapack_gemm(const fptype *src1, size_t src1_step, const fptype *src2, size_t src2_step, fptype alpha,
             const fptype *src3, size_t src3_step, fptype beta, fptype *dst, size_t dst_step, int a_m, int a_n, int d_n, int flags)
 {
-    int ldsrc1 = (int)(src1_step / sizeof(fptype));
-    int ldsrc2 = (int)(src2_step / sizeof(fptype));
-    int ldsrc3 = (int)(src3_step / sizeof(fptype));
-    int lddst = (int)(dst_step / sizeof(fptype));
+    int ldsrc1 = src1_step / sizeof(fptype);
+    int ldsrc2 = src2_step / sizeof(fptype);
+    int ldsrc3 = src3_step / sizeof(fptype);
+    int lddst = dst_step / sizeof(fptype);
     int c_m, c_n, d_m;
     CBLAS_TRANSPOSE transA, transB;
 
@@ -463,10 +434,10 @@ template <typename fptype> static inline int
 lapack_gemm_c(const fptype *src1, size_t src1_step, const fptype *src2, size_t src2_step, fptype alpha,
             const fptype *src3, size_t src3_step, fptype beta, fptype *dst, size_t dst_step, int a_m, int a_n, int d_n, int flags)
 {
-    int ldsrc1 = (int)(src1_step / sizeof(std::complex<fptype>));
-    int ldsrc2 = (int)(src2_step / sizeof(std::complex<fptype>));
-    int ldsrc3 = (int)(src3_step / sizeof(std::complex<fptype>));
-    int lddst = (int)(dst_step / sizeof(std::complex<fptype>));
+    int ldsrc1 = src1_step / sizeof(std::complex<fptype>);
+    int ldsrc2 = src2_step / sizeof(std::complex<fptype>);
+    int ldsrc3 = src3_step / sizeof(std::complex<fptype>);
+    int lddst = dst_step / sizeof(std::complex<fptype>);
     int c_m, c_n, d_m;
     CBLAS_TRANSPOSE transA, transB;
     std::complex<fptype> cAlpha(alpha, 0.0);

@@ -3,11 +3,13 @@
 
 #include "opencv2/ts/ocl_perf.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
-typedef tuple<std::string, std::string, int> Cascade_Image_MinSize_t;
+typedef std::tr1::tuple<std::string, std::string, int> Cascade_Image_MinSize_t;
 typedef perf::TestBaseWithParam<Cascade_Image_MinSize_t> Cascade_Image_MinSize;
 
 #ifdef HAVE_OPENCL
@@ -57,5 +59,3 @@ OCL_PERF_TEST_P(Cascade_Image_MinSize, CascadeClassifier,
 }
 
 #endif //HAVE_OPENCL
-
-} // namespace

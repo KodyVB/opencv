@@ -49,7 +49,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 ///////////// Moments ////////////////////////
@@ -73,6 +73,6 @@ OCL_PERF_TEST_P(MomentsFixture, Moments,
     SANITY_CHECK_MOMENTS(m, 1e-6, ERROR_RELATIVE);
 }
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

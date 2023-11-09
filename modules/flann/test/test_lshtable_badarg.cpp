@@ -41,7 +41,7 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
 
 class CV_LshTableBadArgTest : public cvtest::BadArgTest
 {
@@ -89,11 +89,3 @@ void CV_LshTableBadArgTest::run( int /* start_from */ )
 }
 
 TEST(Flann_LshTable, badarg) { CV_LshTableBadArgTest test; test.safe_run(); }
-
-TEST(Flann_LshTable, bad_any_cast) {
-    Mat features = Mat::ones(1, 64, CV_8U);
-    EXPECT_NO_THROW(flann::GenericIndex<cvflann::Hamming2<unsigned char> >(
-                                            features, cvflann::LshIndexParams()));
-}
-
-}} // namespace

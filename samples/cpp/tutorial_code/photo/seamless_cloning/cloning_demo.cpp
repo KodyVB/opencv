@@ -15,7 +15,7 @@
 * 6- Texture Flattening
 
 * The program takes as input a source and a destination image (for 1-3 methods)
-* and outputs the cloned image.
+* and ouputs the cloned image.
 *
 * Download test images from opencv_extra folder @github.
 *

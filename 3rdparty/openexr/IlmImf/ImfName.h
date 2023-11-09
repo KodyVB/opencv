@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2002, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -45,10 +45,8 @@
 //-----------------------------------------------------------------------------
 
 #include <string.h>
-#include "ImfNamespace.h"
-#include "ImfExport.h"
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+namespace Imf {
 
 
 class Name
@@ -59,9 +57,7 @@ class Name
     // Constructors
     //-------------
 
-    IMF_EXPORT
     Name ();
-    IMF_EXPORT
     Name (const char text[]);
 
 
@@ -69,7 +65,6 @@ class Name
     // Assignment operator
     //--------------------
 
-    IMF_EXPORT
     Name &		operator = (const char text[]);
 
 
@@ -77,9 +72,7 @@ class Name
     // Access to the string
     //---------------------
 
-    IMF_EXPORT
     const char *	text () const		{return _text;}
-    IMF_EXPORT
     const char *	operator * () const	{return _text;}
 
     //---------------
@@ -95,11 +88,8 @@ class Name
 };
 
 
-IMF_EXPORT
 bool operator == (const Name &x, const Name &y);
-IMF_EXPORT
 bool operator != (const Name &x, const Name &y);
-IMF_EXPORT
 bool operator < (const Name &x, const Name &y);
 
 
@@ -151,9 +141,6 @@ operator < (const Name &x, const Name &y)
 }
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
-
-
-
+} // namespace IMF
 
 #endif

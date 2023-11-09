@@ -7,9 +7,14 @@
 
 #include "perf_precomp.hpp"
 
-namespace opencv_test {
+using namespace std;
+using namespace cv;
+using namespace perf;
+using namespace testing;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
-typedef tuple<Size, MatDepth, bool> MomentsParams_t;
+typedef std::tr1::tuple<Size, MatDepth, bool> MomentsParams_t;
 typedef perf::TestBaseWithParam<MomentsParams_t> MomentsFixture_val;
 
 PERF_TEST_P(MomentsFixture_val, Moments1,
@@ -37,5 +42,3 @@ PERF_TEST_P(MomentsFixture_val, Moments1,
 
     SANITY_CHECK_MOMENTS(m, 2e-4, ERROR_RELATIVE);
 }
-
-} // namespace

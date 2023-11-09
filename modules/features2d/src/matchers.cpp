@@ -40,23 +40,11 @@
 //M*/
 
 #include "precomp.hpp"
-#ifdef HAVE_OPENCV_FLANN
-#include "opencv2/flann/miniflann.hpp"
-#endif
 #include <limits>
 #include "opencl_kernels_features2d.hpp"
 
 #if defined(HAVE_EIGEN) && EIGEN_WORLD_VERSION == 2
-#  if defined(_MSC_VER)
-#    pragma warning(push)
-#    pragma warning(disable:4701)  // potentially uninitialized local variable
-#    pragma warning(disable:4702)  // unreachable code
-#    pragma warning(disable:4714)  // const marked as __forceinline not inlined
-#  endif
-#  include <Eigen/Array>
-#  if defined(_MSC_VER)
-#    pragma warning(pop)
-#  endif
+#include <Eigen/Array>
 #endif
 
 namespace cv
@@ -475,7 +463,7 @@ void DescriptorMatcher::DescriptorCollection::clear()
     mergedDescriptors.release();
 }
 
-Mat DescriptorMatcher::DescriptorCollection::getDescriptor( int imgIdx, int localDescIdx ) const
+const Mat DescriptorMatcher::DescriptorCollection::getDescriptor( int imgIdx, int localDescIdx ) const
 {
     CV_Assert( imgIdx < (int)startIdxs.size() );
     int globalIdx = startIdxs[imgIdx] + localDescIdx;
@@ -489,7 +477,7 @@ const Mat& DescriptorMatcher::DescriptorCollection::getDescriptors() const
     return mergedDescriptors;
 }
 
-Mat DescriptorMatcher::DescriptorCollection::getDescriptor( int globalDescIdx ) const
+const Mat DescriptorMatcher::DescriptorCollection::getDescriptor( int globalDescIdx ) const
 {
     CV_Assert( globalDescIdx < size() );
     return mergedDescriptors.row( globalDescIdx );
@@ -579,7 +567,7 @@ void DescriptorMatcher::train()
 void DescriptorMatcher::match( InputArray queryDescriptors, InputArray trainDescriptors,
                               std::vector<DMatch>& matches, InputArray mask ) const
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Ptr<DescriptorMatcher> tempMatcher = clone(true);
     tempMatcher->add(trainDescriptors);
@@ -590,7 +578,7 @@ void DescriptorMatcher::knnMatch( InputArray queryDescriptors, InputArray trainD
                                   std::vector<std::vector<DMatch> >& matches, int knn,
                                   InputArray mask, bool compactResult ) const
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Ptr<DescriptorMatcher> tempMatcher = clone(true);
     tempMatcher->add(trainDescriptors);
@@ -601,7 +589,7 @@ void DescriptorMatcher::radiusMatch( InputArray queryDescriptors, InputArray tra
                                      std::vector<std::vector<DMatch> >& matches, float maxDistance, InputArray mask,
                                      bool compactResult ) const
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Ptr<DescriptorMatcher> tempMatcher = clone(true);
     tempMatcher->add(trainDescriptors);
@@ -610,7 +598,7 @@ void DescriptorMatcher::radiusMatch( InputArray queryDescriptors, InputArray tra
 
 void DescriptorMatcher::match( InputArray queryDescriptors, std::vector<DMatch>& matches, InputArrayOfArrays masks )
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     std::vector<std::vector<DMatch> > knnMatches;
     knnMatch( queryDescriptors, knnMatches, 1, masks, true /*compactResult*/ );
@@ -625,20 +613,15 @@ void DescriptorMatcher::checkMasks( InputArrayOfArrays _masks, int queryDescript
     if( isMaskSupported() && !masks.empty() )
     {
         // Check masks
-        const size_t imageCount = std::max(trainDescCollection.size(), utrainDescCollection.size() );
+        size_t imageCount = std::max(trainDescCollection.size(), utrainDescCollection.size() );
         CV_Assert( masks.size() == imageCount );
         for( size_t i = 0; i < imageCount; i++ )
         {
-            if (masks[i].empty())
-                continue;
-            const bool hasTrainDesc = !trainDescCollection.empty() && !trainDescCollection[i].empty();
-            const bool hasUTrainDesc = !utrainDescCollection.empty() && !utrainDescCollection[i].empty();
-            if (hasTrainDesc || hasUTrainDesc)
+            if( !masks[i].empty() && (!trainDescCollection[i].empty() || !utrainDescCollection[i].empty() ) )
             {
-                const int rows = hasTrainDesc ? trainDescCollection[i].rows : utrainDescCollection[i].rows;
-                CV_Assert(masks[i].type() == CV_8UC1
-                    && masks[i].rows == queryDescriptorsCount
-                    && masks[i].cols == rows);
+                int rows = trainDescCollection[i].empty() ? utrainDescCollection[i].rows : trainDescCollection[i].rows;
+                    CV_Assert( masks[i].rows == queryDescriptorsCount &&
+                        masks[i].cols == rows && masks[i].type() == CV_8UC1);
             }
         }
     }
@@ -647,7 +630,7 @@ void DescriptorMatcher::checkMasks( InputArrayOfArrays _masks, int queryDescript
 void DescriptorMatcher::knnMatch( InputArray queryDescriptors, std::vector<std::vector<DMatch> >& matches, int knn,
                                   InputArrayOfArrays masks, bool compactResult )
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     if( empty() || queryDescriptors.empty() )
         return;
@@ -663,7 +646,7 @@ void DescriptorMatcher::knnMatch( InputArray queryDescriptors, std::vector<std::
 void DescriptorMatcher::radiusMatch( InputArray queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
                                      InputArrayOfArrays masks, bool compactResult )
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     matches.clear();
     if( empty() || queryDescriptors.empty() )
@@ -788,7 +771,7 @@ void BFMatcher::knnMatchImpl( InputArray _queryDescriptors, std::vector<std::vec
     Size trainDescSize = trainDescCollection.empty() ? utrainDescCollection[0].size() : trainDescCollection[0].size();
     int trainDescOffset = trainDescCollection.empty() ? (int)utrainDescCollection[0].offset : 0;
 
-    if ( ocl::isOpenCLActivated() && _queryDescriptors.isUMat() && _queryDescriptors.dims()<=2 && trainDescVectorSize == 1 &&
+    if ( ocl::useOpenCL() && _queryDescriptors.isUMat() && _queryDescriptors.dims()<=2 && trainDescVectorSize == 1 &&
         _queryDescriptors.type() == CV_32FC1 && _queryDescriptors.offset() == 0 && trainDescOffset == 0 &&
         trainDescSize.width == _queryDescriptors.size().width && masks.size() == 1 && masks[0].total() == 0 )
     {
@@ -936,7 +919,7 @@ void BFMatcher::radiusMatchImpl( InputArray _queryDescriptors, std::vector<std::
     Size trainDescSize = trainDescCollection.empty() ? utrainDescCollection[0].size() : trainDescCollection[0].size();
     int trainDescOffset = trainDescCollection.empty() ? (int)utrainDescCollection[0].offset : 0;
 
-    if ( ocl::isOpenCLActivated() && _queryDescriptors.isUMat() && _queryDescriptors.dims()<=2 && trainDescVectorSize == 1 &&
+    if ( ocl::useOpenCL() && _queryDescriptors.isUMat() && _queryDescriptors.dims()<=2 && trainDescVectorSize == 1 &&
         _queryDescriptors.type() == CV_32FC1 && _queryDescriptors.offset() == 0 && trainDescOffset == 0 &&
         trainDescSize.width == _queryDescriptors.size().width && masks.size() == 1 && masks[0].total() == 0 )
     {
@@ -975,7 +958,7 @@ void BFMatcher::radiusMatchImpl( InputArray _queryDescriptors, std::vector<std::
     Mat dist, distf;
 
     int iIdx, imgCount = (int)trainDescCollection.size();
-    int dtype = normType == NORM_HAMMING || normType == NORM_HAMMING2 ||
+    int dtype = normType == NORM_HAMMING ||
         (normType == NORM_L1 && queryDescriptors.type() == CV_8U) ? CV_32S : CV_32F;
 
     for( iIdx = 0; iIdx < imgCount; iIdx++ )
@@ -1022,14 +1005,11 @@ void BFMatcher::radiusMatchImpl( InputArray _queryDescriptors, std::vector<std::
 Ptr<DescriptorMatcher> DescriptorMatcher::create( const String& descriptorMatcherType )
 {
     Ptr<DescriptorMatcher> dm;
-#ifdef HAVE_OPENCV_FLANN
     if( !descriptorMatcherType.compare( "FlannBased" ) )
     {
         dm = makePtr<FlannBasedMatcher>();
     }
-    else
-#endif
-    if( !descriptorMatcherType.compare( "BruteForce" ) ) // L2
+    else if( !descriptorMatcherType.compare( "BruteForce" ) ) // L2
     {
         dm = makePtr<BFMatcher>(int(NORM_L2)); // anonymous enums can't be template parameters
     }
@@ -1056,7 +1036,7 @@ Ptr<DescriptorMatcher> DescriptorMatcher::create( const String& descriptorMatche
     return dm;
 }
 
-Ptr<DescriptorMatcher> DescriptorMatcher::create( const MatcherType& matcherType )
+Ptr<DescriptorMatcher> DescriptorMatcher::create(int matcherType)
 {
 
 
@@ -1064,11 +1044,9 @@ Ptr<DescriptorMatcher> DescriptorMatcher::create( const MatcherType& matcherType
 
     switch(matcherType)
     {
-#ifdef HAVE_OPENCV_FLANN
     case FLANNBASED:
         name = "FlannBased";
         break;
-#endif
     case BRUTEFORCE:
         name = "BruteForce";
         break;
@@ -1093,7 +1071,6 @@ Ptr<DescriptorMatcher> DescriptorMatcher::create( const MatcherType& matcherType
 
 }
 
-#ifdef HAVE_OPENCV_FLANN
 
 /*
  * Flann based matcher
@@ -1159,7 +1136,7 @@ void FlannBasedMatcher::clear()
 
 void FlannBasedMatcher::train()
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     if( !flannIndex || mergedDescriptors.size() < addedDescCount )
     {
@@ -1175,8 +1152,6 @@ void FlannBasedMatcher::train()
     }
 }
 
-using namespace cv::flann;
-
 void FlannBasedMatcher::read( const FileNode& fn)
 {
      if (!indexParams)
@@ -1189,34 +1164,32 @@ void FlannBasedMatcher::read( const FileNode& fn)
      {
         CV_Assert(ip[i].type() == FileNode::MAP);
         String _name =  (String)ip[i]["name"];
-        FlannIndexType type = (FlannIndexType)(int)ip[i]["type"];
-        CV_CheckLE((int)type, (int)LAST_VALUE_FLANN_INDEX_TYPE, "");
+        int type =  (int)ip[i]["type"];
 
         switch(type)
         {
-        case FLANN_INDEX_TYPE_8U:
-        case FLANN_INDEX_TYPE_8S:
-        case FLANN_INDEX_TYPE_16U:
-        case FLANN_INDEX_TYPE_16S:
-        case FLANN_INDEX_TYPE_32S:
+        case CV_8U:
+        case CV_8S:
+        case CV_16U:
+        case CV_16S:
+        case CV_32S:
             indexParams->setInt(_name, (int) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_32F:
+        case CV_32F:
             indexParams->setFloat(_name, (float) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_64F:
+        case CV_64F:
             indexParams->setDouble(_name, (double) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_STRING:
+        case CV_USRTYPE1:
             indexParams->setString(_name, (String) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_BOOL:
+        case CV_MAKETYPE(CV_USRTYPE1,2):
             indexParams->setBool(_name, (int) ip[i]["value"] != 0);
             break;
-        case FLANN_INDEX_TYPE_ALGORITHM:
+        case CV_MAKETYPE(CV_USRTYPE1,3):
             indexParams->setAlgorithm((int) ip[i]["value"]);
             break;
-        // don't default: - compiler warning is here
         };
      }
 
@@ -1230,34 +1203,32 @@ void FlannBasedMatcher::read( const FileNode& fn)
      {
         CV_Assert(sp[i].type() == FileNode::MAP);
         String _name =  (String)sp[i]["name"];
-        FlannIndexType type = (FlannIndexType)(int)sp[i]["type"];
-        CV_CheckLE((int)type, (int)LAST_VALUE_FLANN_INDEX_TYPE, "");
+        int type =  (int)sp[i]["type"];
 
         switch(type)
         {
-        case FLANN_INDEX_TYPE_8U:
-        case FLANN_INDEX_TYPE_8S:
-        case FLANN_INDEX_TYPE_16U:
-        case FLANN_INDEX_TYPE_16S:
-        case FLANN_INDEX_TYPE_32S:
+        case CV_8U:
+        case CV_8S:
+        case CV_16U:
+        case CV_16S:
+        case CV_32S:
             searchParams->setInt(_name, (int) sp[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_32F:
-            searchParams->setFloat(_name, (float) sp[i]["value"]);
+        case CV_32F:
+            searchParams->setFloat(_name, (float) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_64F:
-            searchParams->setDouble(_name, (double) sp[i]["value"]);
+        case CV_64F:
+            searchParams->setDouble(_name, (double) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_STRING:
-            searchParams->setString(_name, (String) sp[i]["value"]);
+        case CV_USRTYPE1:
+            searchParams->setString(_name, (String) ip[i]["value"]);
             break;
-        case FLANN_INDEX_TYPE_BOOL:
-            searchParams->setBool(_name, (int) sp[i]["value"] != 0);
+        case CV_MAKETYPE(CV_USRTYPE1,2):
+            searchParams->setBool(_name, (int) ip[i]["value"] != 0);
             break;
-        case FLANN_INDEX_TYPE_ALGORITHM:
-            searchParams->setAlgorithm((int) sp[i]["value"]);
+        case CV_MAKETYPE(CV_USRTYPE1,3):
+            searchParams->setAlgorithm((int) ip[i]["value"]);
             break;
-        // don't default: - compiler warning is here
         };
      }
 
@@ -1272,7 +1243,7 @@ void FlannBasedMatcher::write( FileStorage& fs) const
      if (indexParams)
      {
          std::vector<String> names;
-         std::vector<FlannIndexType> types;
+         std::vector<int> types;
          std::vector<String> strValues;
          std::vector<double> numValues;
 
@@ -1281,43 +1252,38 @@ void FlannBasedMatcher::write( FileStorage& fs) const
          for(size_t i = 0; i < names.size(); ++i)
          {
              fs << "{" << "name" << names[i] << "type" << types[i] << "value";
-             FlannIndexType type = (FlannIndexType)types[i];
-             if ((int)type < 0 || type > LAST_VALUE_FLANN_INDEX_TYPE)
+             switch(types[i])
              {
-                 fs << (double)numValues[i];
-                 fs << "typename" << strValues[i];
-                 fs << "}";
-                 continue;
-             }
-             switch(type)
-             {
-             case FLANN_INDEX_TYPE_8U:
+             case CV_8U:
                  fs << (uchar)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_8S:
+             case CV_8S:
                  fs << (char)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_16U:
+             case CV_16U:
                  fs << (ushort)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_16S:
+             case CV_16S:
                  fs << (short)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_32S:
-             case FLANN_INDEX_TYPE_BOOL:
-             case FLANN_INDEX_TYPE_ALGORITHM:
+             case CV_32S:
+             case CV_MAKETYPE(CV_USRTYPE1,2):
+             case CV_MAKETYPE(CV_USRTYPE1,3):
                  fs << (int)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_32F:
+             case CV_32F:
                  fs << (float)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_64F:
+             case CV_64F:
                  fs << (double)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_STRING:
+             case CV_USRTYPE1:
                  fs << strValues[i];
                  break;
-             // don't default: - compiler warning is here
+             default:
+                 fs << (double)numValues[i];
+                 fs << "typename" << strValues[i];
+                 break;
              }
              fs << "}";
          }
@@ -1328,7 +1294,7 @@ void FlannBasedMatcher::write( FileStorage& fs) const
      if (searchParams)
      {
          std::vector<String> names;
-         std::vector<FlannIndexType> types;
+         std::vector<int> types;
          std::vector<String> strValues;
          std::vector<double> numValues;
 
@@ -1337,31 +1303,23 @@ void FlannBasedMatcher::write( FileStorage& fs) const
          for(size_t i = 0; i < names.size(); ++i)
          {
              fs << "{" << "name" << names[i] << "type" << types[i] << "value";
-             FlannIndexType type = (FlannIndexType)types[i];
-             if ((int)type < 0 || type > LAST_VALUE_FLANN_INDEX_TYPE)
+             switch(types[i])
              {
-                 fs << (double)numValues[i];
-                 fs << "typename" << strValues[i];
-                 fs << "}";
-                 continue;
-             }
-             switch(type)
-             {
-             case FLANN_INDEX_TYPE_8U:
+             case CV_8U:
                  fs << (uchar)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_8S:
+             case CV_8S:
                  fs << (char)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_16U:
+             case CV_16U:
                  fs << (ushort)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_16S:
+             case CV_16S:
                  fs << (short)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_32S:
-             case FLANN_INDEX_TYPE_BOOL:
-             case FLANN_INDEX_TYPE_ALGORITHM:
+             case CV_32S:
+             case CV_MAKETYPE(CV_USRTYPE1,2):
+             case CV_MAKETYPE(CV_USRTYPE1,3):
                  fs << (int)numValues[i];
                  break;
              case CV_32F:
@@ -1370,10 +1328,13 @@ void FlannBasedMatcher::write( FileStorage& fs) const
              case CV_64F:
                  fs << (double)numValues[i];
                  break;
-             case FLANN_INDEX_TYPE_STRING:
+             case CV_USRTYPE1:
                  fs << strValues[i];
                  break;
-             // don't default: - compiler warning is here
+             default:
+                 fs << (double)numValues[i];
+                 fs << "typename" << strValues[i];
+                 break;
              }
              fs << "}";
          }
@@ -1393,13 +1354,11 @@ Ptr<DescriptorMatcher> FlannBasedMatcher::clone( bool emptyTrainData ) const
     {
         CV_Error( Error::StsNotImplemented, "deep clone functionality is not implemented, because "
                   "Flann::Index has not copy constructor or clone method ");
-#if 0
         //matcher->flannIndex;
         matcher->addedDescCount = addedDescCount;
         matcher->mergedDescriptors = DescriptorCollection( mergedDescriptors );
         std::transform( trainDescCollection.begin(), trainDescCollection.end(),
                         matcher->trainDescCollection.begin(), clone_op );
-#endif
     }
     return matcher;
 }
@@ -1431,7 +1390,7 @@ void FlannBasedMatcher::convertToDMatches( const DescriptorCollection& collectio
 void FlannBasedMatcher::knnMatchImpl( InputArray _queryDescriptors, std::vector<std::vector<DMatch> >& matches, int knn,
                                      InputArrayOfArrays /*masks*/, bool /*compactResult*/ )
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Mat queryDescriptors = _queryDescriptors.getMat();
     Mat indices( queryDescriptors.rows, knn, CV_32SC1 );
@@ -1444,7 +1403,7 @@ void FlannBasedMatcher::knnMatchImpl( InputArray _queryDescriptors, std::vector<
 void FlannBasedMatcher::radiusMatchImpl( InputArray _queryDescriptors, std::vector<std::vector<DMatch> >& matches, float maxDistance,
                                          InputArrayOfArrays /*masks*/, bool /*compactResult*/ )
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Mat queryDescriptors = _queryDescriptors.getMat();
     const int count = mergedDescriptors.size(); // TODO do count as param?
@@ -1460,7 +1419,4 @@ void FlannBasedMatcher::radiusMatchImpl( InputArray _queryDescriptors, std::vect
 
     convertToDMatches( mergedDescriptors, indices, dists, matches );
 }
-
-#endif
-
 }

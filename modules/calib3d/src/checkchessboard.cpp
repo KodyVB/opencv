@@ -41,7 +41,7 @@
 
 #include "precomp.hpp"
 #include "opencv2/imgproc/imgproc_c.h"
-#include "calib3d_c_api.h"
+#include "opencv2/calib3d/calib3d_c.h"
 
 #include <vector>
 #include <algorithm>
@@ -55,12 +55,15 @@ static void icvGetQuadrangleHypotheses(const std::vector<std::vector< cv::Point 
     const float max_aspect_ratio = 3.0f;
     const float min_box_size = 10.0f;
 
-    for (size_t i = 0; i < contours.size(); ++i)
+    typedef std::vector< std::vector< cv::Point > >::const_iterator iter_t;
+    iter_t i;
+    for (i = contours.begin(); i != contours.end(); ++i)
     {
-        if (hierarchy.at(i)[3] != -1)
+        const iter_t::difference_type idx = i - contours.begin();
+        if (hierarchy.at(idx)[3] != -1)
             continue; // skip holes
 
-        const std::vector< cv::Point > & c = contours[i];
+        const std::vector< cv::Point > & c = *i;
         cv::RotatedRect box = cv::minAreaRect(c);
 
         float box_size = MAX(box.size.width, box.size.height);
@@ -75,7 +78,7 @@ static void icvGetQuadrangleHypotheses(const std::vector<std::vector< cv::Point 
             continue;
         }
 
-        quads.emplace_back(box_size, class_id);
+        quads.push_back(std::pair<float, int>(box_size, class_id));
     }
 }
 
@@ -160,12 +163,11 @@ static bool checkQuads(vector<pair<float, int> > & quads, const cv::Size & size)
 int cvCheckChessboard(IplImage* src, CvSize size)
 {
     cv::Mat img = cv::cvarrToMat(src);
-    return (int)cv::checkChessboard(img, size);
+    return checkChessboard(img, size);
 }
 
-bool cv::checkChessboard(InputArray _img, Size size)
+int checkChessboard(const cv::Mat & img, const cv::Size & size)
 {
-    Mat img = _img.getMat();
     CV_Assert(img.channels() == 1 && img.depth() == CV_8U);
 
     const int erosion_count = 1;
@@ -178,13 +180,13 @@ bool cv::checkChessboard(InputArray _img, Size size)
     erode(img, white, Mat(), Point(-1, -1), erosion_count);
     dilate(img, black, Mat(), Point(-1, -1), erosion_count);
 
-    bool result = false;
+    int result = 0;
     for(float thresh_level = black_level; thresh_level < white_level && !result; thresh_level += 20.0f)
     {
         vector<pair<float, int> > quads;
         fillQuads(white, black, thresh_level + black_white_gap, thresh_level, quads);
         if (checkQuads(quads, size))
-            result = true;
+            result = 1;
     }
     return result;
 }

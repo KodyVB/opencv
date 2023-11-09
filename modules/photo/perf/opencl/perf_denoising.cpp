@@ -10,7 +10,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 OCL_PERF_TEST(Photo, DenoisingGrayscale)
@@ -92,6 +92,6 @@ OCL_PERF_TEST(Photo, DISABLED_DenoisingColoredMulti)
     SANITY_CHECK(result);
 }
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

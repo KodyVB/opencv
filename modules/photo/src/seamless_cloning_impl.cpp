@@ -57,8 +57,12 @@ void Cloning::computeGradientX( const Mat &img, Mat &gx)
     }
     else if (img.channels() == 1)
     {
-        filter2D(img, gx, CV_32F, kernel);
-        cvtColor(gx, gx, COLOR_GRAY2BGR);
+        Mat tmp[3];
+        for(int chan = 0 ; chan < 3 ; ++chan)
+        {
+            filter2D(img, tmp[chan], CV_32F, kernel);
+        }
+        merge(tmp, 3, gx);
     }
 }
 
@@ -74,8 +78,12 @@ void Cloning::computeGradientY( const Mat &img, Mat &gy)
     }
     else if (img.channels() == 1)
     {
-        filter2D(img, gy, CV_32F, kernel);
-        cvtColor(gy, gy, COLOR_GRAY2BGR);
+        Mat tmp[3];
+        for(int chan = 0 ; chan < 3 ; ++chan)
+        {
+            filter2D(img, tmp[chan], CV_32F, kernel);
+        }
+        merge(tmp, 3, gy);
     }
 }
 
@@ -139,7 +147,13 @@ void Cloning::dst(const Mat& src, Mat& dest, bool invert)
     split(complex, planes2);
 
     temp = planes2[1].t();
+    dest = Mat::zeros(src.size(), CV_32F);
     temp(Rect( 0, 1, src.cols, src.rows)).copyTo(dest);
+}
+
+void Cloning::idst(const Mat& src, Mat& dest)
+{
+    dst(src, dest, true);
 }
 
 void Cloning::solve(const Mat &img, Mat& mod_diff, Mat &result)
@@ -159,7 +173,7 @@ void Cloning::solve(const Mat &img, Mat& mod_diff, Mat &result)
         }
     }
 
-    dst(res, mod_diff, true);
+    idst(res, mod_diff);
 
     unsigned char *  resLinePtr = result.ptr<unsigned char>(0);
     const unsigned char * imgLinePtr = img.ptr<unsigned char>(0);
@@ -207,7 +221,9 @@ void Cloning::poissonSolver(const Mat &img, Mat &laplacianX , Mat &laplacianY, M
     const int w = img.cols;
     const int h = img.rows;
 
-    Mat lap = laplacianX + laplacianY;
+    Mat lap = Mat(img.size(),CV_32FC1);
+
+    lap = laplacianX + laplacianY;
 
     Mat bound = img.clone();
 
@@ -235,32 +251,30 @@ void Cloning::initVariables(const Mat &destination, const Mat &binaryMask)
     //init of the filters used in the dst
     const int w = destination.cols;
     filter_X.resize(w - 2);
-    double scale = CV_PI / (w - 1);
     for(int i = 0 ; i < w-2 ; ++i)
-        filter_X[i] = 2.0f * (float)std::cos(scale * (i + 1));
+        filter_X[i] = 2.0f * std::cos(static_cast<float>(CV_PI) * (i + 1) / (w - 1));
 
     const int h  = destination.rows;
     filter_Y.resize(h - 2);
-    scale = CV_PI / (h - 1);
     for(int j = 0 ; j < h - 2 ; ++j)
-        filter_Y[j] = 2.0f * (float)std::cos(scale * (j + 1));
+        filter_Y[j] = 2.0f * std::cos(static_cast<float>(CV_PI) * (j + 1) / (h - 1));
 }
 
-void Cloning::computeDerivatives(const Mat& destination, const Mat &patch, Mat &binaryMask)
+void Cloning::computeDerivatives(const Mat& destination, const Mat &patch, const Mat &binaryMask)
 {
-    initVariables(destination, binaryMask);
+    initVariables(destination,binaryMask);
 
-    computeGradientX(destination, destinationGradientX);
-    computeGradientY(destination, destinationGradientY);
+    computeGradientX(destination,destinationGradientX);
+    computeGradientY(destination,destinationGradientY);
 
-    computeGradientX(patch, patchGradientX);
-    computeGradientY(patch, patchGradientY);
+    computeGradientX(patch,patchGradientX);
+    computeGradientY(patch,patchGradientY);
 
     Mat Kernel(Size(3, 3), CV_8UC1);
     Kernel.setTo(Scalar(1));
     erode(binaryMask, binaryMask, Kernel, Point(-1,-1), 3);
 
-    binaryMask.convertTo(binaryMaskFloat, CV_32FC1, 1.0/255.0);
+    binaryMask.convertTo(binaryMaskFloat,CV_32FC1,1.0/255.0);
 }
 
 void Cloning::scalarProduct(Mat mat, float r, float g, float b)
@@ -289,8 +303,11 @@ void Cloning::arrayProduct(const cv::Mat& lhs, const cv::Mat& rhs, cv::Mat& resu
 
 void Cloning::poisson(const Mat &destination)
 {
-    Mat laplacianX = destinationGradientX + patchGradientX;
-    Mat laplacianY = destinationGradientY + patchGradientY;
+    Mat laplacianX = Mat(destination.size(),CV_32FC3);
+    Mat laplacianY = Mat(destination.size(),CV_32FC3);
+
+    laplacianX = destinationGradientX + patchGradientX;
+    laplacianY = destinationGradientY + patchGradientY;
 
     computeLaplacianX(laplacianX,laplacianX);
     computeLaplacianY(laplacianY,laplacianY);
@@ -306,21 +323,21 @@ void Cloning::poisson(const Mat &destination)
     }
 }
 
-void Cloning::evaluate(const Mat &I, Mat &wmask, const Mat &cloned)
+void Cloning::evaluate(const Mat &I, const Mat &wmask, const Mat &cloned)
 {
     bitwise_not(wmask,wmask);
 
     wmask.convertTo(binaryMaskFloatInverted,CV_32FC1,1.0/255.0);
 
-    arrayProduct(destinationGradientX, binaryMaskFloatInverted, destinationGradientX);
-    arrayProduct(destinationGradientY, binaryMaskFloatInverted, destinationGradientY);
+    arrayProduct(destinationGradientX,binaryMaskFloatInverted, destinationGradientX);
+    arrayProduct(destinationGradientY,binaryMaskFloatInverted, destinationGradientY);
 
     poisson(I);
 
     merge(output,cloned);
 }
 
-void Cloning::normalClone(const Mat &destination, const Mat &patch, Mat &binaryMask, Mat &cloned, int flag)
+void Cloning::normalClone(const Mat &destination, const Mat &patch, const Mat &binaryMask, Mat &cloned, int flag)
 {
     const int w = destination.cols;
     const int h = destination.rows;
@@ -332,8 +349,8 @@ void Cloning::normalClone(const Mat &destination, const Mat &patch, Mat &binaryM
     switch(flag)
     {
         case NORMAL_CLONE:
-            arrayProduct(patchGradientX, binaryMaskFloat, patchGradientX);
-            arrayProduct(patchGradientY, binaryMaskFloat, patchGradientY);
+            arrayProduct(patchGradientX,binaryMaskFloat, patchGradientX);
+            arrayProduct(patchGradientY,binaryMaskFloat, patchGradientY);
             break;
 
         case MIXED_CLONE:
@@ -373,7 +390,7 @@ void Cloning::normalClone(const Mat &destination, const Mat &patch, Mat &binaryM
         break;
 
         case MONOCHROME_TRANSFER:
-            Mat gray;
+            Mat gray = Mat(patch.size(),CV_8UC1);
             cvtColor(patch, gray, COLOR_BGR2GRAY );
 
             computeGradientX(gray,patchGradientX);
@@ -403,14 +420,14 @@ void Cloning::localColorChange(Mat &I, Mat &mask, Mat &wmask, Mat &cloned, float
 
 void Cloning::illuminationChange(Mat &I, Mat &mask, Mat &wmask, Mat &cloned, float alpha, float beta)
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     computeDerivatives(I,mask,wmask);
 
     arrayProduct(patchGradientX,binaryMaskFloat, patchGradientX);
     arrayProduct(patchGradientY,binaryMaskFloat, patchGradientY);
 
-    Mat mag;
+    Mat mag = Mat(I.size(),CV_32FC3);
     magnitude(patchGradientX,patchGradientY,mag);
 
     Mat multX, multY, multx_temp, multy_temp;
@@ -438,10 +455,11 @@ void Cloning::textureFlatten(Mat &I, Mat &mask, Mat &wmask, float low_threshold,
 {
     computeDerivatives(I,mask,wmask);
 
-    Mat out;
+    Mat out = Mat(mask.size(),CV_8UC1);
     Canny(mask,out,low_threshold,high_threshold,kernel_size);
 
-    Mat zeros = Mat::zeros(patchGradientX.size(), CV_32FC3);
+    Mat zeros(patchGradientX.size(), CV_32FC3);
+    zeros.setTo(0);
     Mat zerosMask = (out != 255);
     zeros.copyTo(patchGradientX, zerosMask);
     zeros.copyTo(patchGradientY, zerosMask);

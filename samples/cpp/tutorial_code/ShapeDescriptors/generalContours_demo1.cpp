@@ -12,8 +12,9 @@
 using namespace cv;
 using namespace std;
 
-Mat src_gray;
+Mat src; Mat src_gray;
 int thresh = 100;
+int max_thresh = 255;
 RNG rng(12345);
 
 /// Function header
@@ -22,39 +23,37 @@ void thresh_callback(int, void* );
 /**
  * @function main
  */
-int main( int argc, char** argv )
+int main( int, char** argv )
 {
-    //! [setup]
-    /// Load source image
-    CommandLineParser parser( argc, argv, "{@input | stuff.jpg | input image}" );
-    Mat src = imread( samples::findFile( parser.get<String>( "@input" ) ) );
-    if( src.empty() )
-    {
-        cout << "Could not open or find the image!\n" << endl;
-        cout << "usage: " << argv[0] << " <Input image>" << endl;
-        return -1;
-    }
+  //![setup]
+  /// Load source image
+  src = imread( argv[1], IMREAD_COLOR );
 
-    /// Convert image to gray and blur it
-    cvtColor( src, src_gray, COLOR_BGR2GRAY );
-    blur( src_gray, src_gray, Size(3,3) );
-    //! [setup]
+  /// Convert image to gray and blur it
+  cvtColor( src, src_gray, COLOR_BGR2GRAY );
+  blur( src_gray, src_gray, Size(3,3) );
+  //![setup]
 
-    //! [createWindow]
-    /// Create Window
-    const char* source_window = "Source";
-    namedWindow( source_window );
-    imshow( source_window, src );
-    //! [createWindow]
+  //![createWindow]
+  /// Create Window
+  const char* source_window = "Source";
+  namedWindow( source_window, WINDOW_AUTOSIZE );
+  imshow( source_window, src );
+  //![createWindow]
 
-    //! [trackbar]
-    const int max_thresh = 255;
-    createTrackbar( "Canny thresh:", source_window, &thresh, max_thresh, thresh_callback );
-    thresh_callback( 0, 0 );
-    //! [trackbar]
+  //![taskbar]
+  createTrackbar( " Threshold:", "Source", &thresh, max_thresh, thresh_callback );
+  //![taskbar]
 
-    waitKey();
-    return 0;
+  //![callback00]
+  thresh_callback( 0, 0 );
+  //![callback00]
+
+  //![waitForIt]
+  waitKey(0);
+  //![waitForIt]
+
+  return(0);
 }
 
 /**
@@ -62,50 +61,53 @@ int main( int argc, char** argv )
  */
 void thresh_callback(int, void* )
 {
-    //! [Canny]
-    /// Detect edges using Canny
-    Mat canny_output;
-    Canny( src_gray, canny_output, thresh, thresh*2 );
-    //! [Canny]
+  Mat threshold_output;
+  vector<vector<Point> > contours;
+  vector<Vec4i> hierarchy;
 
-    //! [findContours]
-    /// Find contours
-    vector<vector<Point> > contours;
-    findContours( canny_output, contours, RETR_TREE, CHAIN_APPROX_SIMPLE );
-    //! [findContours]
+  //![threshold]
+  /// Detect edges using Threshold
+  threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY );
+  //![threshold]
 
-    //! [allthework]
-    /// Approximate contours to polygons + get bounding rects and circles
-    vector<vector<Point> > contours_poly( contours.size() );
-    vector<Rect> boundRect( contours.size() );
-    vector<Point2f>centers( contours.size() );
-    vector<float>radius( contours.size() );
+  //![findContours]
+  /// Find contours
+  findContours( threshold_output, contours, hierarchy, RETR_TREE, CHAIN_APPROX_SIMPLE, Point(0, 0) );
+  //![findContours]
 
-    for( size_t i = 0; i < contours.size(); i++ )
-    {
-        approxPolyDP( contours[i], contours_poly[i], 3, true );
-        boundRect[i] = boundingRect( contours_poly[i] );
-        minEnclosingCircle( contours_poly[i], centers[i], radius[i] );
-    }
-    //! [allthework]
+  /// Approximate contours to polygons + get bounding rects and circles
+  vector<vector<Point> > contours_poly( contours.size() );
+  vector<Rect> boundRect( contours.size() );
+  vector<Point2f>center( contours.size() );
+  vector<float>radius( contours.size() );
 
-    //! [zeroMat]
-    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-    //! [zeroMat]
+  //![allthework]
+  for( size_t i = 0; i < contours.size(); i++ )
+  {
+    approxPolyDP( Mat(contours[i]), contours_poly[i], 3, true );
+    boundRect[i] = boundingRect( Mat(contours_poly[i]) );
+    minEnclosingCircle( contours_poly[i], center[i], radius[i] );
+  }
+  //![allthework]
 
-    //! [forContour]
-    /// Draw polygonal contour + bonding rects + circles
-    for( size_t i = 0; i< contours.size(); i++ )
-    {
-        Scalar color = Scalar( rng.uniform(0, 256), rng.uniform(0,256), rng.uniform(0,256) );
-        drawContours( drawing, contours_poly, (int)i, color );
-        rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2 );
-        circle( drawing, centers[i], (int)radius[i], color, 2 );
-    }
-    //! [forContour]
+  //![zeroMat]
+  /// Draw polygonal contour + bonding rects + circles
+  Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+  //![zeroMat]
 
-    //! [showDrawings]
-    /// Show in a window
-    imshow( "Contours", drawing );
-    //! [showDrawings]
+  //![forContour]
+  for( size_t i = 0; i< contours.size(); i++ )
+  {
+    Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+    drawContours( drawing, contours_poly, (int)i, color, 1, 8, vector<Vec4i>(), 0, Point() );
+    rectangle( drawing, boundRect[i].tl(), boundRect[i].br(), color, 2, 8, 0 );
+    circle( drawing, center[i], (int)radius[i], color, 2, 8, 0 );
+  }
+  //![forContour]
+
+  //![showDrawings]
+  /// Show in a window
+  namedWindow( "Contours", WINDOW_AUTOSIZE );
+  imshow( "Contours", drawing );
+  //![showDrawings]
 }

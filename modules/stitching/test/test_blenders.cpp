@@ -41,7 +41,8 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 TEST(MultiBandBlender, CanBlendTwoImages)
 {
@@ -75,5 +76,3 @@ TEST(MultiBandBlender, CanBlendTwoImages)
     double psnr = cvtest::PSNR(expected, result);
     EXPECT_GE(psnr, 50);
 }
-
-}} // namespace

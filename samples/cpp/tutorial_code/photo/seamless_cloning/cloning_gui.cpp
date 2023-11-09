@@ -15,7 +15,7 @@
 * 6- Texture Flattening
 
 * The program takes as input a source and a destination image (for 1-3 methods)
-* and outputs the cloned image.
+* and ouputs the cloned image.
 
 * Step 1:
 * -> In the source image, select the region of interest by left click mouse button. A Polygon ROI will be created by left clicking mouse button.
@@ -38,12 +38,7 @@
 #include <iostream>
 #include <stdlib.h>
 
-// we're NOT "using namespace std;" here, to avoid collisions between the beta variable and std::beta in c++17
-using std::cin;
-using std::cout;
-using std::endl;
-using std::string;
-
+using namespace std;
 using namespace cv;
 
 Mat img0, img1, img2, res, res1, final, final1, blend;
@@ -451,7 +446,7 @@ int main()
     }
     else
     {
-        cout << "Wrong Option Chosen" << endl;
+        cout << "Wrong Option Choosen" << endl;
         exit(0);
     }
 

@@ -7,18 +7,6 @@ namespace detail
 
     typedef short deriv_type;
 
-    struct ScharrDerivInvoker : ParallelLoopBody
-    {
-        ScharrDerivInvoker(const Mat& _src, const Mat& _dst)
-            : src(_src), dst(_dst)
-        { }
-
-        void operator()(const Range& range) const CV_OVERRIDE;
-
-        const Mat& src;
-        const Mat& dst;
-    };
-
     struct LKTrackerInvoker : ParallelLoopBody
     {
         LKTrackerInvoker( const Mat& _prevImg, const Mat& _prevDeriv, const Mat& _nextImg,
@@ -27,7 +15,7 @@ namespace detail
                           Size _winSize, TermCriteria _criteria,
                           int _level, int _maxLevel, int _flags, float _minEigThreshold );
 
-        void operator()(const Range& range) const CV_OVERRIDE;
+        void operator()(const Range& range) const;
 
         const Mat* prevImg;
         const Mat* nextImg;

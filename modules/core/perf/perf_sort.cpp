@@ -1,8 +1,12 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+
+using std::tr1::tuple;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 #define TYPICAL_MAT_SIZES_SORT  TYPICAL_MAT_SIZES
 #define TYPICAL_MAT_TYPES_SORT  CV_8UC1, CV_16UC1, CV_32FC1
@@ -46,5 +50,3 @@ PERF_TEST_P(sortIdxFixture, sorIdx, TYPICAL_MATS_SORT)
 
     SANITY_CHECK_NOTHING();
 }
-
-} // namespace

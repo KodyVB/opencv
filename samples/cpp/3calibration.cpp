@@ -17,10 +17,10 @@ using namespace std;
 
 enum { DETECTION = 0, CAPTURING = 1, CALIBRATED = 2 };
 
-static void help(char** argv)
+static void help()
 {
         printf( "\nThis is a camera calibration sample that calibrates 3 horizontally placed cameras together.\n"
-               "Usage: %s\n"
+               "Usage: 3calibration\n"
                "     -w=<board_width>         # the number of inner corners per one of board dimension\n"
                "     -h=<board_height>        # the number of inner corners per another board dimension\n"
                "     [-s=<squareSize>]       # square size in some user-defined units (1 by default)\n"
@@ -29,7 +29,7 @@ static void help(char** argv)
                "     [-a=<aspectRatio>]      # fix aspect ratio (fx/fy)\n"
                "     [-p]                     # fix the principal point at the center\n"
                "     [input_data]             # input data - text file with a list of the images of the board\n"
-               "\n", argv[0] );
+               "\n" );
 
 }
 
@@ -190,7 +190,7 @@ int main( int argc, char** argv )
         "{zt||}{a|1|}{p||}{@input||}");
     if (parser.has("help"))
     {
-        help(argv);
+        help();
         return 0;
     }
     boardSize.width = parser.get<int>("w");
@@ -207,7 +207,7 @@ int main( int argc, char** argv )
     inputFilename = parser.get<string>("@input");
     if (!parser.check())
     {
-        help(argv);
+        help();
         parser.printErrors();
         return -1;
     }
@@ -250,7 +250,7 @@ int main( int argc, char** argv )
         {
             int k1 = k == 0 ? 2 : k == 1 ? 0 : 1;
             printf("%s\n", imageList[i*3+k].c_str());
-            view = imread(imageList[i*3+k], IMREAD_COLOR);
+            view = imread(imageList[i*3+k], 1);
 
             if(!view.empty())
             {
@@ -338,7 +338,7 @@ int main( int argc, char** argv )
         {
             int k1 = k == 0 ? 2 : k == 1 ? 0 : 1;
             int k2 = k == 0 ? 1 : k == 1 ? 0 : 2;
-            view = imread(imageList[i*3+k], IMREAD_COLOR);
+            view = imread(imageList[i*3+k], 1);
 
             if(view.empty())
                 continue;
@@ -347,7 +347,7 @@ int main( int argc, char** argv )
             remap(view, rview, map1[k1], map2[k1], INTER_LINEAR);
         }
         printf("%s %s %s\n", imageList[i*3].c_str(), imageList[i*3+1].c_str(), imageList[i*3+2].c_str());
-        resize( canvas, small_canvas, Size(1500, 1500/3), 0, 0, INTER_LINEAR_EXACT );
+        resize( canvas, small_canvas, Size(1500, 1500/3) );
         for( k = 0; k < small_canvas.rows; k += 16 )
             line(small_canvas, Point(0, k), Point(small_canvas.cols, k), Scalar(0,255,0), 1);
         imshow("rectified", small_canvas);

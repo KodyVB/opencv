@@ -24,8 +24,6 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include "precomp.hpp"
-
 #include "opencv2\highgui\highgui_winrt.hpp"
 #include "window_winrt_bridge.hpp"
 
@@ -271,7 +269,7 @@ void CvWindow::createSlider(cv::String name, int* val, int count, CvTrackbarCall
         // Image control is loaded. See callback implementation in CvWindow ctor.
         slider->Width = sliderDefaultWidth;
     }
-    slider->Value = val ? *val : 0;
+    slider->Value = *val;
     slider->Maximum = count;
     slider->Visibility = Windows::UI::Xaml::Visibility::Visible;
     slider->Margin = Windows::UI::Xaml::ThicknessHelper::FromLengths(10, 10, 10, 0);

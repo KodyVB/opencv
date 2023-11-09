@@ -28,22 +28,26 @@ using namespace cv;
 
 int main(int argc, char* argv[])
 {
-    cv::CommandLineParser parser(argc, argv, "{help h||show help message}{@image|lena.jpg|input image}");
+    cv::CommandLineParser parser(argc, argv, "{help h||show help message}{@image||input image}");
     if (parser.has("help"))
     {
         parser.printMessage();
-        return 0;
+        exit(0);
     }
-    string filename = samples::findFile(parser.get<string>("@image"));
+    if (parser.get<string>("@image").empty())
+    {
+        parser.printMessage();
+        exit(0);
+    }
 
-    Mat I = imread(filename);
+    Mat I = imread(parser.get<string>("@image"));
 
     int num,type;
 
     if(I.empty())
     {
         cout <<  "Image not found" << endl;
-        return 1;
+        exit(0);
     }
 
     cout << endl;

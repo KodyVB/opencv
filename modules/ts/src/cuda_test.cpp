@@ -51,7 +51,7 @@ using namespace testing::internal;
 
 namespace perf
 {
-    void printCudaInfo();
+    CV_EXPORTS void printCudaInfo();
 }
 
 namespace cvtest
@@ -91,13 +91,7 @@ namespace cvtest
 
     GpuMat createMat(Size size, int type, bool useRoi)
     {
-        Size size0; Point ofs;
-        return createMat(size, type, size0, ofs, useRoi);
-    }
-
-    GpuMat createMat(Size size, int type, Size& size0, Point& ofs, bool useRoi)
-    {
-        size0 = size;
+        Size size0 = size;
 
         if (useRoi)
         {
@@ -106,10 +100,9 @@ namespace cvtest
         }
 
         GpuMat d_m(size0, type);
-        if (size0 != size) {
-            ofs = Point((size0.width - size.width) / 2, (size0.height - size.height) / 2);
-            d_m = d_m(Rect(ofs, size));
-        }
+
+        if (size0 != size)
+            d_m = d_m(Rect((size0.width - size.width) / 2, (size0.height - size.height) / 2, size.width, size.height));
 
         return d_m;
     }
@@ -329,20 +322,16 @@ namespace cvtest
 
         if (m1.size() != m2.size())
         {
-            std::stringstream msg;
-            msg << "Matrices \"" << expr1 << "\" and \"" << expr2 << "\" have different sizes : \""
-                << expr1 << "\" [" << PrintToString(m1.size()) << "] vs \""
-                << expr2 << "\" [" << PrintToString(m2.size()) << "]";
-            return AssertionFailure() << msg.str();
+            return AssertionFailure() << "Matrices \"" << expr1 << "\" and \"" << expr2 << "\" have different sizes : \""
+                                      << expr1 << "\" [" << PrintToString(m1.size()) << "] vs \""
+                                      << expr2 << "\" [" << PrintToString(m2.size()) << "]";
         }
 
         if (m1.type() != m2.type())
         {
-            std::stringstream msg;
-            msg << "Matrices \"" << expr1 << "\" and \"" << expr2 << "\" have different types : \""
-                << expr1 << "\" [" << PrintToString(MatType(m1.type())) << "] vs \""
-                << expr2 << "\" [" << PrintToString(MatType(m2.type())) << "]";
-             return AssertionFailure() << msg.str();
+            return AssertionFailure() << "Matrices \"" << expr1 << "\" and \"" << expr2 << "\" have different types : \""
+                                      << expr1 << "\" [" << PrintToString(MatType(m1.type())) << "] vs \""
+                                      << expr2 << "\" [" << PrintToString(MatType(m2.type())) << "]";
         }
 
         Mat diff;
@@ -354,14 +343,12 @@ namespace cvtest
 
         if (maxVal > eps)
         {
-            std::stringstream msg;
-            msg << "The max difference between matrices \"" << expr1 << "\" and \"" << expr2
-                << "\" is " << maxVal << " at (" << maxLoc.y << ", " << maxLoc.x / m1.channels() << ")"
-                << ", which exceeds \"" << eps_expr << "\", where \""
-                << expr1 << "\" at (" << maxLoc.y << ", " << maxLoc.x / m1.channels() << ") evaluates to " << printMatVal(m1, maxLoc) << ", \""
-                << expr2 << "\" at (" << maxLoc.y << ", " << maxLoc.x / m1.channels() << ") evaluates to " << printMatVal(m2, maxLoc) << ", \""
-                << eps_expr << "\" evaluates to " << eps;
-            return AssertionFailure() << msg.str();
+            return AssertionFailure() << "The max difference between matrices \"" << expr1 << "\" and \"" << expr2
+                                      << "\" is " << maxVal << " at (" << maxLoc.y << ", " << maxLoc.x / m1.channels() << ")"
+                                      << ", which exceeds \"" << eps_expr << "\", where \""
+                                      << expr1 << "\" at (" << maxLoc.y << ", " << maxLoc.x / m1.channels() << ") evaluates to " << printMatVal(m1, maxLoc) << ", \""
+                                      << expr2 << "\" at (" << maxLoc.y << ", " << maxLoc.x / m1.channels() << ") evaluates to " << printMatVal(m2, maxLoc) << ", \""
+                                      << eps_expr << "\" evaluates to " << eps;
         }
 
         return AssertionSuccess();
@@ -469,7 +456,7 @@ namespace cvtest
             return false;
         }
 
-        struct KeyPointLess
+        struct KeyPointLess : std::binary_function<cv::KeyPoint, cv::KeyPoint, bool>
         {
             bool operator()(const cv::KeyPoint& kp1, const cv::KeyPoint& kp2) const
             {
@@ -482,11 +469,9 @@ namespace cvtest
     {
         if (gold.size() != actual.size())
         {
-            std::stringstream msg;
-            msg << "KeyPoints size mistmach\n"
-                << "\"" << gold_expr << "\" : " << gold.size() << "\n"
-                << "\"" << actual_expr << "\" : " << actual.size();
-            return AssertionFailure() << msg.str();
+            return testing::AssertionFailure() << "KeyPoints size mistmach\n"
+                                               << "\"" << gold_expr << "\" : " << gold.size() << "\n"
+                                               << "\"" << actual_expr << "\" : " << actual.size();
         }
 
         std::sort(actual.begin(), actual.end(), KeyPointLess());
@@ -499,16 +484,14 @@ namespace cvtest
 
             if (!keyPointsEquals(p1, p2))
             {
-                std::stringstream msg;
-                msg << "KeyPoints differ at " << i << "\n"
-                    << "\"" << gold_expr << "\" vs \"" << actual_expr << "\" : \n"
-                    << "pt : " << testing::PrintToString(p1.pt) << " vs " << testing::PrintToString(p2.pt) << "\n"
-                    << "size : " << p1.size << " vs " << p2.size << "\n"
-                    << "angle : " << p1.angle << " vs " << p2.angle << "\n"
-                    << "response : " << p1.response << " vs " << p2.response << "\n"
-                    << "octave : " << p1.octave << " vs " << p2.octave << "\n"
-                    << "class_id : " << p1.class_id << " vs " << p2.class_id;
-                return AssertionFailure() << msg.str();
+                return testing::AssertionFailure() << "KeyPoints differ at " << i << "\n"
+                                                   << "\"" << gold_expr << "\" vs \"" << actual_expr << "\" : \n"
+                                                   << "pt : " << testing::PrintToString(p1.pt) << " vs " << testing::PrintToString(p2.pt) << "\n"
+                                                   << "size : " << p1.size << " vs " << p2.size << "\n"
+                                                   << "angle : " << p1.angle << " vs " << p2.angle << "\n"
+                                                   << "response : " << p1.response << " vs " << p2.response << "\n"
+                                                   << "octave : " << p1.octave << " vs " << p2.octave << "\n"
+                                                   << "class_id : " << p1.class_id << " vs " << p2.class_id;
             }
         }
 
@@ -522,35 +505,13 @@ namespace cvtest
 
         int validCount = 0;
 
-        if (actual.size() == gold.size())
+        for (size_t i = 0; i < gold.size(); ++i)
         {
-            for (size_t i = 0; i < gold.size(); ++i)
-            {
-                const cv::KeyPoint& p1 = gold[i];
-                const cv::KeyPoint& p2 = actual[i];
+            const cv::KeyPoint& p1 = gold[i];
+            const cv::KeyPoint& p2 = actual[i];
 
-                if (keyPointsEquals(p1, p2))
-                    ++validCount;
-            }
-        }
-        else
-        {
-            std::vector<cv::KeyPoint>& shorter = gold;
-            std::vector<cv::KeyPoint>& longer = actual;
-            if (actual.size() < gold.size())
-            {
-                shorter = actual;
-                longer = gold;
-            }
-            for (size_t i = 0; i < shorter.size(); ++i)
-            {
-                const cv::KeyPoint& p1 = shorter[i];
-                const cv::KeyPoint& p2 = longer[i];
-                const cv::KeyPoint& p3 = longer[i+1];
-
-                if (keyPointsEquals(p1, p2) || keyPointsEquals(p1, p3))
-                    ++validCount;
-            }
+            if (keyPointsEquals(p1, p2))
+                ++validCount;
         }
 
         return validCount;
@@ -584,6 +545,4 @@ namespace cvtest
 void cv::cuda::PrintTo(const DeviceInfo& info, std::ostream* os)
 {
     (*os) << info.name();
-    if (info.deviceID())
-        (*os) << " [ID: " << info.deviceID() << "]";
 }

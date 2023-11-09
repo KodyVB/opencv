@@ -41,8 +41,10 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include <string>
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 class CV_ImgprocUMatTest : public cvtest::BaseTest
 {
@@ -53,15 +55,15 @@ protected:
     void run(int)
     {
         string imgpath = string(ts->get_data_path()) + "shared/lena.png";
-        Mat img = imread(imgpath, IMREAD_COLOR), gray, smallimg, result;
+        Mat img = imread(imgpath, 1), gray, smallimg, result;
         UMat uimg = img.getUMat(ACCESS_READ), ugray, usmallimg, uresult;
 
         cvtColor(img, gray, COLOR_BGR2GRAY);
-        resize(gray, smallimg, Size(), 0.75, 0.75, INTER_LINEAR_EXACT);
+        resize(gray, smallimg, Size(), 0.75, 0.75, INTER_LINEAR);
         equalizeHist(smallimg, result);
 
         cvtColor(uimg, ugray, COLOR_BGR2GRAY);
-        resize(ugray, usmallimg, Size(), 0.75, 0.75, INTER_LINEAR_EXACT);
+        resize(ugray, usmallimg, Size(), 0.75, 0.75, INTER_LINEAR);
         equalizeHist(usmallimg, uresult);
 
 #if 0
@@ -80,5 +82,3 @@ protected:
 };
 
 TEST(Imgproc_UMat, regression) { CV_ImgprocUMatTest test; test.safe_run(); }
-
-}} // namespace

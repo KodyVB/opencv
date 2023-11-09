@@ -3,7 +3,7 @@
 // This will loop through frames of video either from input media file
 // or camera device and do processing of these data in OpenCL and then
 // in OpenCV. In OpenCL it does inversion of pixels in left half of frame and
-// in OpenCV it does blurring in the right half of frame.
+// in OpenCV it does bluring in the right half of frame.
 */
 #include <cstdio>
 #include <cstdlib>
@@ -14,13 +14,9 @@
 #include <iomanip>
 #include <stdexcept>
 
-#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS // eliminate build warning
-#define CL_TARGET_OPENCL_VERSION 200  // 2.0
 
-#ifdef __APPLE__
-#define CL_SILENCE_DEPRECATION
+#if __APPLE__
 #include <OpenCL/cl.h>
 #else
 #include <CL/cl.h>
@@ -468,6 +464,7 @@ private:
     cl_kernel                   m_kernelImg;
     cl_mem                      m_img_src; // used as src in case processing of cl image
     cl_mem                      m_mem_obj;
+    cl_event                    m_event;
 };
 
 
@@ -497,6 +494,7 @@ App::App(CommandLineParser& cmd)
     m_kernelImg  = 0;
     m_img_src    = 0;
     m_mem_obj    = 0;
+    m_event      = 0;
 } // ctor
 
 
@@ -525,6 +523,11 @@ App::~App()
     {
         clReleaseMemObject(m_mem_obj);
         m_mem_obj = 0;
+    }
+
+    if (m_event)
+    {
+        clReleaseEvent(m_event);
     }
 
     if (m_kernelBuf)
@@ -671,7 +674,7 @@ int App::initVideoSource()
             throw std::runtime_error(std::string("specify video source"));
     }
 
-    catch (const std::exception& e)
+    catch (std::exception e)
     {
         cerr << "ERROR: " << e.what() << std::endl;
         return -1;
@@ -697,7 +700,7 @@ int App::process_frame_with_open_cl(cv::Mat& frame, bool use_buffer, cl_mem* mem
     if (0 == mem || 0 == m_img_src)
     {
         // allocate/delete cl memory objects every frame for the simplicity.
-        // in real application more efficient pipeline can be built.
+        // in real applicaton more efficient pipeline can be built.
 
         if (use_buffer)
         {
@@ -768,13 +771,11 @@ int App::process_frame_with_open_cl(cv::Mat& frame, bool use_buffer, cl_mem* mem
 
             size_t origin[] = { 0, 0, 0 };
             size_t region[] = { (size_t)frame.cols, (size_t)frame.rows, 1 };
-            cl_event asyncEvent = 0;
-            res = clEnqueueCopyImage(m_queue, m_img_src, mem, origin, origin, region, 0, 0, &asyncEvent);
+            res = clEnqueueCopyImage(m_queue, m_img_src, mem, origin, origin, region, 0, 0, &m_event);
             if (CL_SUCCESS != res)
                 return -1;
 
-            res = clWaitForEvents(1, &asyncEvent);
-            clReleaseEvent(asyncEvent);
+            res = clWaitForEvents(1, &m_event);
             if (CL_SUCCESS != res)
                 return -1;
 
@@ -790,17 +791,19 @@ int App::process_frame_with_open_cl(cv::Mat& frame, bool use_buffer, cl_mem* mem
         }
     }
 
+    m_event = clCreateUserEvent(m_context, &res);
+    if (0 == m_event || CL_SUCCESS != res)
+        return -1;
+
     // process left half of frame in OpenCL
     size_t size[] = { (size_t)frame.cols / 2, (size_t)frame.rows };
-    cl_event asyncEvent = 0;
-    res = clEnqueueNDRangeKernel(m_queue, kernel, 2, 0, size, 0, 0, 0, &asyncEvent);
+    res = clEnqueueNDRangeKernel(m_queue, kernel, 2, 0, size, 0, 0, 0, &m_event);
     if (CL_SUCCESS != res)
         return -1;
 
-    res = clWaitForEvents(1, &asyncEvent);
-    clReleaseEvent(asyncEvent);
+    res = clWaitForEvents(1, &m_event);
     if (CL_SUCCESS != res)
-        return -1;
+        return - 1;
 
     mem_obj[0] = mem;
 

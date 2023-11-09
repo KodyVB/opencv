@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2003, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -42,9 +42,8 @@
 #include <ImfChromaticitiesAttribute.h>
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_ENTER
+namespace Imf {
 
-using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 
 template <>
 const char *
@@ -56,7 +55,7 @@ ChromaticitiesAttribute::staticTypeName ()
 
 template <>
 void
-ChromaticitiesAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, int version) const
+ChromaticitiesAttribute::writeValueTo (OStream &os, int) const
 {
     Xdr::write <StreamIO> (os, _value.red.x);
     Xdr::write <StreamIO> (os, _value.red.y);
@@ -71,7 +70,7 @@ ChromaticitiesAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &
 
 template <>
 void
-ChromaticitiesAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is, int size, int version)
+ChromaticitiesAttribute::readValueFrom (IStream &is, int, int)
 {
     Xdr::read <StreamIO> (is, _value.red.x);
     Xdr::read <StreamIO> (is, _value.red.y);
@@ -84,4 +83,4 @@ ChromaticitiesAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream 
 }
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_EXIT 
+} // namespace Imf

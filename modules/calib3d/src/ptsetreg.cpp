@@ -47,8 +47,6 @@
 #include <iterator>
 #include <limits>
 
-#include "usac.hpp"
-
 namespace cv
 {
 
@@ -80,7 +78,10 @@ class RANSACPointSetRegistrator : public PointSetRegistrator
 public:
     RANSACPointSetRegistrator(const Ptr<PointSetRegistrator::Callback>& _cb=Ptr<PointSetRegistrator::Callback>(),
                               int _modelPoints=0, double _threshold=0, double _confidence=0.99, int _maxIters=1000)
-      : cb(_cb), modelPoints(_modelPoints), threshold(_threshold), confidence(_confidence), maxIters(_maxIters) {}
+    : cb(_cb), modelPoints(_modelPoints), threshold(_threshold), confidence(_confidence), maxIters(_maxIters)
+    {
+        checkPartialSubsets = false;
+    }
 
     int findInliers( const Mat& m1, const Mat& m2, const Mat& model, Mat& err, Mat& mask, double thresh ) const
     {
@@ -101,63 +102,66 @@ public:
         return nz;
     }
 
-    bool getSubset( const Mat& m1, const Mat& m2, Mat& ms1, Mat& ms2, RNG& rng, int maxAttempts=1000 ) const
+    bool getSubset( const Mat& m1, const Mat& m2,
+                    Mat& ms1, Mat& ms2, RNG& rng,
+                    int maxAttempts=1000 ) const
     {
         cv::AutoBuffer<int> _idx(modelPoints);
-        int* idx = _idx.data();
-
-        const int d1 = m1.channels() > 1 ? m1.channels() : m1.cols;
-        const int d2 = m2.channels() > 1 ? m2.channels() : m2.cols;
-
-        int esz1 = (int)m1.elemSize1() * d1;
-        int esz2 = (int)m2.elemSize1() * d2;
-        CV_Assert((esz1 % sizeof(int)) == 0 && (esz2 % sizeof(int)) == 0);
-        esz1 /= sizeof(int);
-        esz2 /= sizeof(int);
-
-        const int count = m1.checkVector(d1);
-        const int count2 = m2.checkVector(d2);
-        CV_Assert(count >= modelPoints && count == count2);
-
-        const int *m1ptr = m1.ptr<int>();
-        const int *m2ptr = m2.ptr<int>();
+        int* idx = _idx;
+        int i = 0, j, k, iters = 0;
+        int d1 = m1.channels() > 1 ? m1.channels() : m1.cols;
+        int d2 = m2.channels() > 1 ? m2.channels() : m2.cols;
+        int esz1 = (int)m1.elemSize1()*d1, esz2 = (int)m2.elemSize1()*d2;
+        int count = m1.checkVector(d1), count2 = m2.checkVector(d2);
+        const int *m1ptr = m1.ptr<int>(), *m2ptr = m2.ptr<int>();
 
         ms1.create(modelPoints, 1, CV_MAKETYPE(m1.depth(), d1));
         ms2.create(modelPoints, 1, CV_MAKETYPE(m2.depth(), d2));
 
-        int *ms1ptr = ms1.ptr<int>();
-        int *ms2ptr = ms2.ptr<int>();
+        int *ms1ptr = ms1.ptr<int>(), *ms2ptr = ms2.ptr<int>();
 
-        for( int iters = 0; iters < maxAttempts; ++iters )
+        CV_Assert( count >= modelPoints && count == count2 );
+        CV_Assert( (esz1 % sizeof(int)) == 0 && (esz2 % sizeof(int)) == 0 );
+        esz1 /= sizeof(int);
+        esz2 /= sizeof(int);
+
+        for(; iters < maxAttempts; iters++)
         {
-            int i;
-
-            for( i = 0; i < modelPoints; ++i )
+            for( i = 0; i < modelPoints && iters < maxAttempts; )
             {
-                int idx_i;
-
-                for ( idx_i = rng.uniform(0, count);
-                    std::find(idx, idx + i, idx_i) != idx + i;
-                    idx_i = rng.uniform(0, count) )
-                {}
-
-                idx[i] = idx_i;
-
-                for( int k = 0; k < esz1; ++k )
+                int idx_i = 0;
+                for(;;)
+                {
+                    idx_i = idx[i] = rng.uniform(0, count);
+                    for( j = 0; j < i; j++ )
+                        if( idx_i == idx[j] )
+                            break;
+                    if( j == i )
+                        break;
+                }
+                for( k = 0; k < esz1; k++ )
                     ms1ptr[i*esz1 + k] = m1ptr[idx_i*esz1 + k];
-
-                for( int k = 0; k < esz2; ++k )
+                for( k = 0; k < esz2; k++ )
                     ms2ptr[i*esz2 + k] = m2ptr[idx_i*esz2 + k];
+                if( checkPartialSubsets && !cb->checkSubset( ms1, ms2, i+1 ))
+                {
+                    // we may have selected some bad points;
+                    // so, let's remove some of them randomly
+                    i = rng.uniform(0, i+1);
+                    iters++;
+                    continue;
+                }
+                i++;
             }
-
-            if( cb->checkSubset(ms1, ms2, i) )
-                return true;
+            if( !checkPartialSubsets && i == modelPoints && !cb->checkSubset(ms1, ms2, i))
+                continue;
+            break;
         }
 
-        return false;
+        return i == modelPoints && iters < maxAttempts;
     }
 
-    bool run(InputArray _m1, InputArray _m2, OutputArray _model, OutputArray _mask) const CV_OVERRIDE
+    bool run(InputArray _m1, InputArray _m2, OutputArray _model, OutputArray _mask) const
     {
         bool result = false;
         Mat m1 = _m1.getMat(), m2 = _m2.getMat();
@@ -253,10 +257,11 @@ public:
         return result;
     }
 
-    void setCallback(const Ptr<PointSetRegistrator::Callback>& _cb) CV_OVERRIDE { cb = _cb; }
+    void setCallback(const Ptr<PointSetRegistrator::Callback>& _cb) { cb = _cb; }
 
     Ptr<PointSetRegistrator::Callback> cb;
     int modelPoints;
+    bool checkPartialSubsets;
     double threshold;
     double confidence;
     int maxIters;
@@ -269,7 +274,7 @@ public:
                               int _modelPoints=0, double _confidence=0.99, int _maxIters=1000)
     : RANSACPointSetRegistrator(_cb, _modelPoints, 0, _confidence, _maxIters) {}
 
-    bool run(InputArray _m1, InputArray _m2, OutputArray _model, OutputArray _mask) const CV_OVERRIDE
+    bool run(InputArray _m1, InputArray _m2, OutputArray _model, OutputArray _mask) const
     {
         const double outlierRatio = 0.45;
         bool result = false;
@@ -391,23 +396,10 @@ Ptr<PointSetRegistrator> createLMeDSPointSetRegistrator(const Ptr<PointSetRegist
 }
 
 
-/*
- * Compute
- *  x    a b c   X     t1
- *  y  = d e f * Y  +  t2
- *  z    g h i   Z     t3
- *
- *  - every element in _m1 contains (X,Y,Z), which are called source points
- *  - every element in _m2 contains (x,y,z), which are called destination points
- *  - _model is of size 3x4, which contains
- *     a b c t1
- *     d e f t2
- *     g h i t3
- */
 class Affine3DEstimatorCallback : public PointSetRegistrator::Callback
 {
 public:
-    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const CV_OVERRIDE
+    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const
     {
         Mat m1 = _m1.getMat(), m2 = _m2.getMat();
         const Point3f* from = m1.ptr<Point3f>();
@@ -445,7 +437,7 @@ public:
         return 1;
     }
 
-    void computeError( InputArray _m1, InputArray _m2, InputArray _model, OutputArray _err ) const CV_OVERRIDE
+    void computeError( InputArray _m1, InputArray _m2, InputArray _model, OutputArray _err ) const
     {
         Mat m1 = _m1.getMat(), m2 = _m2.getMat(), model = _model.getMat();
         const Point3f* from = m1.ptr<Point3f>();
@@ -472,7 +464,7 @@ public:
         }
     }
 
-    bool checkSubset( InputArray _ms1, InputArray _ms2, int count ) const CV_OVERRIDE
+    bool checkSubset( InputArray _ms1, InputArray _ms2, int count ) const
     {
         const float threshold = 0.996f;
         Mat ms1 = _ms1.getMat(), ms2 = _ms2.getMat();
@@ -490,13 +482,13 @@ public:
             for(j = 0; j < i; ++j)
             {
                 Point3f d1 = ptr[j] - ptr[i];
-                float n1 = d1.x*d1.x + d1.y*d1.y + d1.z*d1.z;
+                float n1 = d1.x*d1.x + d1.y*d1.y;
 
                 for(k = 0; k < j; ++k)
                 {
                     Point3f d2 = ptr[k] - ptr[i];
-                    float denom = (d2.x*d2.x + d2.y*d2.y + d2.z*d2.z)*n1;
-                    float num = d1.x*d2.x + d1.y*d2.y + d1.z*d2.z;
+                    float denom = (d2.x*d2.x + d2.y*d2.y)*n1;
+                    float num = d1.x*d2.x + d1.y*d2.y;
 
                     if( num*num > threshold*threshold*denom )
                         return false;
@@ -507,102 +499,10 @@ public:
     }
 };
 
-
-/*
- * Compute
- *  x      X     t1
- *  y  =   Y  +  t2
- *  z      Z     t3
- *
- *  - every element in _m1 contains (X,Y,Z), which are called source points
- *  - every element in _m2 contains (x,y,z), which are called destination points
- *  - _model is of size 3x1, which contains
- *      t1
- *      t2
- *      t3
- */
-class Translation3DEstimatorCallback CV_FINAL : public PointSetRegistrator::Callback
-{
-public:
-    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const CV_OVERRIDE
-    {
-
-        Mat m1 = _m1.getMat(), m2 = _m2.getMat();
-        const Point3f* from = m1.ptr<Point3f>();
-        const Point3f* to   = m2.ptr<Point3f>();
-
-        Matx13d T;
-
-        // The optimal translation is the mean of the pointwise displacements
-        for(int i = 0; i < 4; i++)
-        {
-            const Point3f& f = from[i];
-            const Point3f& t = to[i];
-
-            T(0, 0) = T(0, 0) + t.x - f.x;
-            T(0, 1) = T(0, 1) + t.y - f.y;
-            T(0, 2) = T(0, 2) + t.z - f.z;
-        }
-        T *= (1.0f / 4);
-        Mat(T, false).copyTo(_model);
-        return 1;
-    }
-
-    void computeError( InputArray _m1, InputArray _m2, InputArray _model, OutputArray _err ) const CV_OVERRIDE
-    {
-        Mat m1 = _m1.getMat(), m2 = _m2.getMat(), model = _model.getMat();
-        const Point3f* from = m1.ptr<Point3f>();
-        const Point3f* to   = m2.ptr<Point3f>();
-        const double* F = model.ptr<double>();
-
-        int count = m1.checkVector(3);
-        CV_Assert( count > 0 );
-
-        _err.create(count, 1, CV_32F);
-        Mat err = _err.getMat();
-        float* errptr = err.ptr<float>();
-
-        for(int i = 0; i < count; i++ )
-        {
-            const Point3f& f = from[i];
-            const Point3f& t = to[i];
-
-            double a = F[0] + f.x - t.x;
-            double b = F[1] + f.y - t.y;
-            double c = F[2] + f.z - t.z;
-
-            errptr[i] = (float)(a*a + b*b + c*c);
-        }
-    }
-
-    // not doing SVD, no degeneracy concerns, can simply return true
-    bool checkSubset( InputArray _ms1, InputArray _ms2, int count ) const CV_OVERRIDE
-    {
-        // voids to suppress compiler warnings
-        (void)_ms1;
-        (void)_ms2;
-        (void)count;
-        return true;
-    }
-};
-
-
-/*
- * Compute
- *  x     a  b   X    c
- *     =       *    +
- *  y     d  e   Y    f
- *
- *  - every element in _m1 contains (X,Y), which are called source points
- *  - every element in _m2 contains (x,y), which are called destination points
- *  - _model is of size 2x3, which contains
- *    a b c
- *    d e f
- */
 class Affine2DEstimatorCallback : public PointSetRegistrator::Callback
 {
 public:
-    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const CV_OVERRIDE
+    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const
     {
         Mat m1 = _m1.getMat(), m2 = _m2.getMat();
         const Point2f* from = m1.ptr<Point2f>();
@@ -662,7 +562,7 @@ public:
         return 1;
     }
 
-    void computeError( InputArray _m1, InputArray _m2, InputArray _model, OutputArray _err ) const CV_OVERRIDE
+    void computeError( InputArray _m1, InputArray _m2, InputArray _model, OutputArray _err ) const
     {
         Mat m1 = _m1.getMat(), m2 = _m2.getMat(), model = _model.getMat();
         const Point2f* from = m1.ptr<Point2f>();
@@ -691,31 +591,19 @@ public:
         }
     }
 
-    bool checkSubset( InputArray _ms1, InputArray _ms2, int count ) const CV_OVERRIDE
+    bool checkSubset( InputArray _ms1, InputArray, int count ) const
     {
         Mat ms1 = _ms1.getMat();
-        Mat ms2 = _ms2.getMat();
-        // check collinearity and also check that points are too close
-        return !haveCollinearPoints(ms1, count) && !haveCollinearPoints(ms2, count);
+        // check colinearity and also check that points are too close
+        // only ms1 affects actual estimation stability
+        return !haveCollinearPoints(ms1, count);
     }
 };
 
-/*
- * Compute
- *  x    c -s    X    t1
- *    =       *     +
- *  y    s  c    Y    t2
- *
- *  - every element in _m1 contains (X,Y), which are called source points
- *  - every element in _m2 contains (x,y), which are called destination points
- *  - _model is of size 2x3, which contains
- *    c  -s  t1
- *    s   c  t2
- */
 class AffinePartial2DEstimatorCallback : public Affine2DEstimatorCallback
 {
 public:
-    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const CV_OVERRIDE
+    int runKernel( InputArray _m1, InputArray _m2, OutputArray _model ) const
     {
         Mat m1 = _m1.getMat(), m2 = _m2.getMat();
         const Point2f* from = m1.ptr<Point2f>();
@@ -771,7 +659,7 @@ public:
         dst = _dst.getMat();
     }
 
-    bool compute(InputArray _param, OutputArray _err, OutputArray _Jac) const CV_OVERRIDE
+    bool compute(InputArray _param, OutputArray _err, OutputArray _Jac) const
     {
         int i, count = src.checkVector(2);
         Mat param = _param.getMat();
@@ -829,7 +717,7 @@ public:
         dst = _dst.getMat();
     }
 
-    bool compute(InputArray _param, OutputArray _err, OutputArray _Jac) const CV_OVERRIDE
+    bool compute(InputArray _param, OutputArray _err, OutputArray _Jac) const
     {
         int i, count = src.checkVector(2);
         Mat param = _param.getMat();
@@ -878,9 +766,9 @@ public:
 
 int estimateAffine3D(InputArray _from, InputArray _to,
                      OutputArray _out, OutputArray _inliers,
-                     double ransacThreshold, double confidence)
+                     double param1, double param2)
 {
-    CV_INSTRUMENT_REGION();
+    CV_INSTRUMENT_REGION()
 
     Mat from = _from.getMat(), to = _to.getMat();
     int count = from.checkVector(3);
@@ -894,114 +782,10 @@ int estimateAffine3D(InputArray _from, InputArray _to,
     dTo = dTo.reshape(3, count);
 
     const double epsilon = DBL_EPSILON;
-    ransacThreshold = ransacThreshold <= 0 ? 3 : ransacThreshold;
-    confidence = (confidence < epsilon) ? 0.99 : (confidence > 1 - epsilon) ? 0.99 : confidence;
+    param1 = param1 <= 0 ? 3 : param1;
+    param2 = (param2 < epsilon) ? 0.99 : (param2 > 1 - epsilon) ? 0.99 : param2;
 
-    return createRANSACPointSetRegistrator(makePtr<Affine3DEstimatorCallback>(), 4, ransacThreshold, confidence)->run(dFrom, dTo, _out, _inliers);
-}
-
-Mat    estimateAffine3D(InputArray _from, InputArray _to,
-                        CV_OUT double* _scale, bool force_rotation)
-{
-    CV_INSTRUMENT_REGION();
-    Mat from = _from.getMat(), to = _to.getMat();
-    int count = from.checkVector(3);
-
-    CV_CheckGE(count, 3, "Umeyama algorithm needs at least 3 points for affine transformation estimation.");
-    CV_CheckEQ(to.checkVector(3), count, "Point sets need to have the same size");
-    from = from.reshape(1, count);
-    to = to.reshape(1, count);
-    if(from.type() != CV_64F)
-        from.convertTo(from, CV_64F);
-    if(to.type() != CV_64F)
-        to.convertTo(to, CV_64F);
-
-    const double one_over_n = 1./count;
-
-    const auto colwise_mean = [one_over_n](const Mat& m)
-    {
-        Mat my;
-        reduce(m, my, 0, REDUCE_SUM, CV_64F);
-        return my * one_over_n;
-    };
-
-    const auto demean = [count](const Mat& A, const Mat& mean)
-    {
-        Mat A_centered = Mat::zeros(count, 3, CV_64F);
-        for(int i = 0; i < count; i++)
-        {
-            A_centered.row(i) = A.row(i) - mean;
-        }
-        return A_centered;
-    };
-
-    Mat from_mean = colwise_mean(from);
-    Mat to_mean = colwise_mean(to);
-
-    Mat from_centered = demean(from, from_mean);
-    Mat to_centered = demean(to, to_mean);
-
-    Mat cov = to_centered.t() * from_centered * one_over_n;
-
-    Mat u,d,vt;
-    SVD::compute(cov, d, u, vt, SVD::MODIFY_A | SVD::FULL_UV);
-
-    CV_CheckGE(countNonZero(d), 2, "Points cannot be colinear");
-
-    Mat S = Mat::eye(3, 3, CV_64F);
-    // det(d) can only ever be >=0, so we can always use this here (compared to the original formula by Umeyama)
-    if (force_rotation && (determinant(u) * determinant(vt) < 0))
-    {
-        S.at<double>(2, 2) = -1;
-    }
-    Mat rmat = u*S*vt;
-
-    double scale = 1.0;
-    if (_scale)
-    {
-        double var_from = 0.;
-        scale = 0.;
-        for(int i = 0; i < 3; i++)
-        {
-            var_from += norm(from_centered.col(i), NORM_L2SQR);
-            scale += d.at<double>(i, 0) * S.at<double>(i, i);
-        }
-        double inverse_var = count / var_from;
-        scale *= inverse_var;
-        *_scale = scale;
-    }
-    Mat new_to = scale * rmat * from_mean.t();
-
-    Mat transform;
-    transform.create(3, 4, CV_64F);
-    Mat r_part(transform(Rect(0, 0, 3, 3)));
-    rmat.copyTo(r_part);
-    transform.col(3) = to_mean.t() - new_to;
-    return transform;
-}
-
-int estimateTranslation3D(InputArray _from, InputArray _to,
-                          OutputArray _out, OutputArray _inliers,
-                          double ransacThreshold, double confidence)
-{
-    CV_INSTRUMENT_REGION();
-
-    Mat from = _from.getMat(), to = _to.getMat();
-    int count = from.checkVector(3);
-
-    CV_Assert( count >= 0 && to.checkVector(3) == count );
-
-    Mat dFrom, dTo;
-    from.convertTo(dFrom, CV_32F);
-    to.convertTo(dTo, CV_32F);
-    dFrom = dFrom.reshape(3, count);
-    dTo = dTo.reshape(3, count);
-
-    const double epsilon = DBL_EPSILON;
-    ransacThreshold = ransacThreshold <= 0 ? 3 : ransacThreshold;
-    confidence = (confidence < epsilon) ? 0.99 : (confidence > 1 - epsilon) ? 0.99 : confidence;
-
-    return createRANSACPointSetRegistrator(makePtr<Translation3DEstimatorCallback>(), 4, ransacThreshold, confidence)->run(dFrom, dTo, _out, _inliers);
+    return createRANSACPointSetRegistrator(makePtr<Affine3DEstimatorCallback>(), 4, param1, param2)->run(dFrom, dTo, _out, _inliers);
 }
 
 Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
@@ -1009,11 +793,6 @@ Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
                      const size_t maxIters, const double confidence,
                      const size_t refineIters)
 {
-
-    if (method >= USAC_DEFAULT && method <= USAC_MAGSAC)
-        return cv::usac::estimateAffine2D(_from, _to, _inliers, method,
-            ransacReprojThreshold, (int)maxIters, confidence, (int)refineIters);
-
     Mat from = _from.getMat(), to = _to.getMat();
     int count = from.checkVector(2);
     bool result = false;
@@ -1023,19 +802,12 @@ Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
 
     if (from.type() != CV_32FC2 || to.type() != CV_32FC2)
     {
-        Mat tmp1, tmp2;
-        from.convertTo(tmp1, CV_32FC2);
-        from = tmp1;
-        to.convertTo(tmp2, CV_32FC2);
-        to = tmp2;
+        Mat tmp;
+        from.convertTo(tmp, CV_32FC2);
+        from = tmp;
+        to.convertTo(tmp, CV_32FC2);
+        to = tmp;
     }
-    else
-    {
-        // avoid changing of inputs in compressElems() call
-        from = from.clone();
-        to = to.clone();
-    }
-
     // convert to N x 1 vectors
     from = from.reshape(2, count);
     to = to.reshape(2, count);
@@ -1066,7 +838,7 @@ Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
             Mat src = from.rowRange(0, inliers_count);
             Mat dst = to.rowRange(0, inliers_count);
             Mat Hvec = H.reshape(1, 6);
-            LMSolver::create(makePtr<Affine2DRefineCallback>(src, dst), static_cast<int>(refineIters))->run(Hvec);
+            createLMSolver(makePtr<Affine2DRefineCallback>(src, dst), static_cast<int>(refineIters))->run(Hvec);
         }
     }
 
@@ -1083,18 +855,6 @@ Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray _inliers,
     return H;
 }
 
-Mat estimateAffine2D(InputArray _from, InputArray _to, OutputArray inliers,
-                     const UsacParams &params) {
-    Ptr<usac::Model> model;
-    usac::setParameters(model, usac::EstimationMethod::AFFINE, params, inliers.needed());
-    Ptr<usac::RansacOutput> ransac_output;
-    if (usac::run(model, _from, _to,
-            ransac_output, noArray(), noArray(), noArray(), noArray())) {
-        usac::saveMask(inliers, ransac_output->getInliersMask());
-        return ransac_output->getModel().rowRange(0,2);
-    } else return Mat();
-}
-
 Mat estimateAffinePartial2D(InputArray _from, InputArray _to, OutputArray _inliers,
                             const int method, const double ransacReprojThreshold,
                             const size_t maxIters, const double confidence,
@@ -1109,19 +869,12 @@ Mat estimateAffinePartial2D(InputArray _from, InputArray _to, OutputArray _inlie
 
     if (from.type() != CV_32FC2 || to.type() != CV_32FC2)
     {
-        Mat tmp1, tmp2;
-        from.convertTo(tmp1, CV_32FC2);
-        from = tmp1;
-        to.convertTo(tmp2, CV_32FC2);
-        to = tmp2;
+        Mat tmp;
+        from.convertTo(tmp, CV_32FC2);
+        from = tmp;
+        to.convertTo(tmp, CV_32FC2);
+        to = tmp;
     }
-    else
-    {
-        // avoid changing of inputs in compressElems() call
-        from = from.clone();
-        to = to.clone();
-    }
-
     // convert to N x 1 vectors
     from = from.reshape(2, count);
     to = to.reshape(2, count);
@@ -1159,7 +912,7 @@ Mat estimateAffinePartial2D(InputArray _from, InputArray _to, OutputArray _inlie
             double *Hptr = H.ptr<double>();
             double Hvec_buf[4] = {Hptr[0], Hptr[3], Hptr[2], Hptr[5]};
             Mat Hvec (4, 1, CV_64F, Hvec_buf);
-            LMSolver::create(makePtr<AffinePartial2DRefineCallback>(src, dst), static_cast<int>(refineIters))->run(Hvec);
+            createLMSolver(makePtr<AffinePartial2DRefineCallback>(src, dst), static_cast<int>(refineIters))->run(Hvec);
             // update H with refined parameters
             Hptr[0] = Hptr[4] = Hvec_buf[0];
             Hptr[1] = -Hvec_buf[1];

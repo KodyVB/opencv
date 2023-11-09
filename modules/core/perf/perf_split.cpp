@@ -1,10 +1,12 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
-typedef tuple<Size, MatType, int> Size_Depth_Channels_t;
+typedef std::tr1::tuple<Size, MatType, int> Size_Depth_Channels_t;
 typedef perf::TestBaseWithParam<Size_Depth_Channels_t> Size_Depth_Channels;
 
 PERF_TEST_P( Size_Depth_Channels, split,
@@ -27,7 +29,9 @@ PERF_TEST_P( Size_Depth_Channels, split,
     int runs = (sz.width <= 640) ? 8 : 1;
     TEST_CYCLE_MULTIRUN(runs) split(m, (vector<Mat>&)mv);
 
+#if defined (__aarch64__)
     SANITY_CHECK(mv, 2e-5);
+#else
+    SANITY_CHECK(mv, 1e-12);
+#endif
 }
-
-} // namespace

@@ -59,7 +59,7 @@ can be found in @cite Muja2009 .
 namespace cvflann
 {
     CV_EXPORTS flann_distance_t flann_distance_type();
-    CV_DEPRECATED CV_EXPORTS void set_distance_type(flann_distance_t distance_type, int order);
+    FLANN_DEPRECATED CV_EXPORTS void set_distance_type(flann_distance_t distance_type, int order);
 }
 
 
@@ -95,8 +95,6 @@ using ::cvflann::MaxDistance;
 using ::cvflann::HammingLUT;
 using ::cvflann::Hamming;
 using ::cvflann::Hamming2;
-using ::cvflann::DNAmmingLUT;
-using ::cvflann::DNAmming2;
 using ::cvflann::HistIntersectionDistance;
 using ::cvflann::HellingerDistance;
 using ::cvflann::ChiSquareDistance;
@@ -105,66 +103,6 @@ using ::cvflann::KL_Divergence;
 
 /** @brief The FLANN nearest neighbor index class. This class is templated with the type of elements for which
 the index is built.
-
-`Distance` functor specifies the metric to be used to calculate the distance between two points.
-There are several `Distance` functors that are readily available:
-
-cv::cvflann::L2_Simple - Squared Euclidean distance functor.
-This is the simpler, unrolled version. This is preferable for very low dimensionality data (eg 3D points)
-
-cv::flann::L2 - Squared Euclidean distance functor, optimized version.
-
-cv::flann::L1 - Manhattan distance functor, optimized version.
-
-cv::flann::MinkowskiDistance -  The Minkowski distance functor.
-This is highly optimised with loop unrolling.
-The computation of squared root at the end is omitted for efficiency.
-
-cv::flann::MaxDistance - The max distance functor. It computes the
-maximum distance between two vectors. This distance is not a valid kdtree distance, it's not
-dimensionwise additive.
-
-cv::flann::HammingLUT -  %Hamming distance functor. It counts the bit
-differences between two strings using a lookup table implementation.
-
-cv::flann::Hamming - %Hamming distance functor. Population count is
-performed using library calls, if available. Lookup table implementation is used as a fallback.
-
-cv::flann::Hamming2 - %Hamming distance functor. Population count is
-implemented in 12 arithmetic operations (one of which is multiplication).
-
-cv::flann::DNAmmingLUT -  %Adaptation of the Hamming distance functor to DNA comparison.
-As the four bases A, C, G, T of the DNA (or A, G, C, U for RNA) can be coded on 2 bits,
-it counts the bits pairs differences between two sequences using a lookup table implementation.
-
-cv::flann::DNAmming2 - %Adaptation of the Hamming distance functor to DNA comparison.
-Bases differences count are vectorised thanks to arithmetic operations using standard
-registers (AVX2 and AVX-512 should come in a near future).
-
-cv::flann::HistIntersectionDistance - The histogram
-intersection distance functor.
-
-cv::flann::HellingerDistance - The Hellinger distance functor.
-
-cv::flann::ChiSquareDistance - The chi-square distance functor.
-
-cv::flann::KL_Divergence - The Kullback-Leibler divergence functor.
-
-Although the provided implementations cover a vast range of cases, it is also possible to use
-a custom implementation. The distance functor is a class whose `operator()` computes the distance
-between two features. If the distance is also a kd-tree compatible distance, it should also provide an
-`accum_dist()` method that computes the distance between individual feature dimensions.
-
-In addition to `operator()` and `accum_dist()`, a distance functor should also define the
-`ElementType` and the `ResultType` as the types of the elements it operates on and the type of the
-result it computes. If a distance functor can be used as a kd-tree distance (meaning that the full
-distance between a pair of features can be accumulated from the partial distances between the
-individual dimensions) a typedef `is_kdtree_distance` should be present inside the distance functor.
-If the distance is not a kd-tree distance, but it's a distance in a vector space (the individual
-dimensions of the elements it operates on can be accessed independently) a typedef
-`is_vector_space_distance` should be defined inside the functor. If neither typedef is defined, the
-distance is assumed to be a metric distance and will only be used with indexes operating on
-generic metric distances.
  */
 template <typename Distance>
 class GenericIndex
@@ -201,28 +139,8 @@ public:
             KDTreeIndexParams( int trees = 4 );
         };
         @endcode
-        - **HierarchicalClusteringIndexParams** When passing an object of this type the index constructed
-        will be a hierarchical tree of clusters, dividing each set of points into n clusters whose centers
-        are picked among the points without further refinement of their position.
-        This algorithm fits both floating, integer and binary vectors. :
-        @code
-        struct HierarchicalClusteringIndexParams : public IndexParams
-        {
-            HierarchicalClusteringIndexParams(
-                int branching = 32,
-                flann_centers_init_t centers_init = CENTERS_RANDOM,
-                int trees = 4,
-                int leaf_size = 100);
-
-        };
-        @endcode
         - **KMeansIndexParams** When passing an object of this type the index constructed will be a
-        hierarchical k-means tree (one tree by default), dividing each set of points into n clusters
-        whose barycenters are refined iteratively.
-        Note that this algorithm has been extended to the support of binary vectors as an alternative
-        to LSH when knn search speed is the criterium. It will also outperform LSH when processing
-        directly (i.e. without the use of MCA/PCA) datasets whose points share mostly the same values
-        for most of the dimensions. It is recommended to set more than one tree with binary data. :
+        hierarchical k-means tree. :
         @code
         struct KMeansIndexParams : public IndexParams
         {
@@ -230,8 +148,7 @@ public:
                 int branching = 32,
                 int iterations = 11,
                 flann_centers_init_t centers_init = CENTERS_RANDOM,
-                float cb_index = 0.2,
-                int trees = 1);
+                float cb_index = 0.2 );
         };
         @endcode
         - **CompositeIndexParams** When using a parameters object of this type the index created
@@ -250,15 +167,14 @@ public:
         - **LshIndexParams** When using a parameters object of this type the index created uses
         multi-probe LSH (by Multi-Probe LSH: Efficient Indexing for High-Dimensional Similarity Search
         by Qin Lv, William Josephson, Zhe Wang, Moses Charikar, Kai Li., Proceedings of the 33rd
-        International Conference on Very Large Data Bases (VLDB). Vienna, Austria. September 2007).
-        This algorithm is designed for binary vectors. :
+        International Conference on Very Large Data Bases (VLDB). Vienna, Austria. September 2007) :
         @code
         struct LshIndexParams : public IndexParams
         {
             LshIndexParams(
-                int table_number,
-                int key_size,
-                int multi_probe_level );
+                unsigned int table_number,
+                unsigned int key_size,
+                unsigned int multi_probe_level );
         };
         @endcode
         - **AutotunedIndexParams** When passing an object of this type the index created is
@@ -301,17 +217,6 @@ public:
                        std::vector<DistanceType>& dists, int knn, const ::cvflann::SearchParams& params);
         void knnSearch(const Mat& queries, Mat& indices, Mat& dists, int knn, const ::cvflann::SearchParams& params);
 
-        /** @brief Performs a radius nearest neighbor search for a given query point using the index.
-
-        @param query The query point.
-        @param indices Vector that will contain the indices of the nearest neighbors found.
-        @param dists Vector that will contain the distances to the nearest neighbors found. It has the same
-        number of elements as indices.
-        @param radius The search radius.
-        @param params SearchParams
-
-        This function returns the number of nearest neighbors found.
-        */
         int radiusSearch(const std::vector<ElementType>& query, std::vector<int>& indices,
                          std::vector<DistanceType>& dists, DistanceType radius, const ::cvflann::SearchParams& params);
         int radiusSearch(const Mat& query, Mat& indices, Mat& dists,
@@ -321,15 +226,14 @@ public:
 
         int veclen() const { return nnIndex->veclen(); }
 
-        int size() const { return (int)nnIndex->size(); }
+        int size() const { return nnIndex->size(); }
 
         ::cvflann::IndexParams getParameters() { return nnIndex->getParameters(); }
 
-        CV_DEPRECATED const ::cvflann::IndexParams* getIndexParameters() { return nnIndex->getIndexParameters(); }
+        FLANN_DEPRECATED const ::cvflann::IndexParams* getIndexParameters() { return nnIndex->getIndexParameters(); }
 
 private:
         ::cvflann::Index<Distance>* nnIndex;
-        Mat _dataset;
 };
 
 //! @cond IGNORED
@@ -345,11 +249,10 @@ private:
 
 template <typename Distance>
 GenericIndex<Distance>::GenericIndex(const Mat& dataset, const ::cvflann::IndexParams& params, Distance distance)
-: _dataset(dataset)
 {
     CV_Assert(dataset.type() == CvType<ElementType>::type());
     CV_Assert(dataset.isContinuous());
-    ::cvflann::Matrix<ElementType> m_dataset((ElementType*)_dataset.ptr<ElementType>(0), _dataset.rows, _dataset.cols);
+    ::cvflann::Matrix<ElementType> m_dataset((ElementType*)dataset.ptr<ElementType>(0), dataset.rows, dataset.cols);
 
     nnIndex = new ::cvflann::Index<Distance>(m_dataset, params, distance);
 
@@ -429,6 +332,8 @@ int GenericIndex<Distance>::radiusSearch(const Mat& query, Mat& indices, Mat& di
     return nnIndex->radiusSearch(m_query,m_indices,m_dists,radius,searchParams);
 }
 
+//! @endcond
+
 /**
  * @deprecated Use GenericIndex class instead
  */
@@ -439,7 +344,7 @@ public:
     typedef typename L2<T>::ElementType ElementType;
     typedef typename L2<T>::ResultType DistanceType;
 
-    CV_DEPRECATED Index_(const Mat& dataset, const ::cvflann::IndexParams& params)
+    FLANN_DEPRECATED Index_(const Mat& dataset, const ::cvflann::IndexParams& params)
     {
         printf("[WARNING] The cv::flann::Index_<T> class is deperecated, use cv::flann::GenericIndex<Distance> instead\n");
 
@@ -463,13 +368,13 @@ public:
         if (nnIndex_L1) nnIndex_L1->buildIndex();
         if (nnIndex_L2) nnIndex_L2->buildIndex();
     }
-    CV_DEPRECATED ~Index_()
+    FLANN_DEPRECATED ~Index_()
     {
         if (nnIndex_L1) delete nnIndex_L1;
         if (nnIndex_L2) delete nnIndex_L2;
     }
 
-    CV_DEPRECATED void knnSearch(const std::vector<ElementType>& query, std::vector<int>& indices, std::vector<DistanceType>& dists, int knn, const ::cvflann::SearchParams& searchParams)
+    FLANN_DEPRECATED void knnSearch(const std::vector<ElementType>& query, std::vector<int>& indices, std::vector<DistanceType>& dists, int knn, const ::cvflann::SearchParams& searchParams)
     {
         ::cvflann::Matrix<ElementType> m_query((ElementType*)&query[0], 1, query.size());
         ::cvflann::Matrix<int> m_indices(&indices[0], 1, indices.size());
@@ -478,7 +383,7 @@ public:
         if (nnIndex_L1) nnIndex_L1->knnSearch(m_query,m_indices,m_dists,knn,searchParams);
         if (nnIndex_L2) nnIndex_L2->knnSearch(m_query,m_indices,m_dists,knn,searchParams);
     }
-    CV_DEPRECATED void knnSearch(const Mat& queries, Mat& indices, Mat& dists, int knn, const ::cvflann::SearchParams& searchParams)
+    FLANN_DEPRECATED void knnSearch(const Mat& queries, Mat& indices, Mat& dists, int knn, const ::cvflann::SearchParams& searchParams)
     {
         CV_Assert(queries.type() == CvType<ElementType>::type());
         CV_Assert(queries.isContinuous());
@@ -496,7 +401,7 @@ public:
         if (nnIndex_L2) nnIndex_L2->knnSearch(m_queries,m_indices,m_dists,knn, searchParams);
     }
 
-    CV_DEPRECATED int radiusSearch(const std::vector<ElementType>& query, std::vector<int>& indices, std::vector<DistanceType>& dists, DistanceType radius, const ::cvflann::SearchParams& searchParams)
+    FLANN_DEPRECATED int radiusSearch(const std::vector<ElementType>& query, std::vector<int>& indices, std::vector<DistanceType>& dists, DistanceType radius, const ::cvflann::SearchParams& searchParams)
     {
         ::cvflann::Matrix<ElementType> m_query((ElementType*)&query[0], 1, query.size());
         ::cvflann::Matrix<int> m_indices(&indices[0], 1, indices.size());
@@ -506,7 +411,7 @@ public:
         if (nnIndex_L2) return nnIndex_L2->radiusSearch(m_query,m_indices,m_dists,radius,searchParams);
     }
 
-    CV_DEPRECATED int radiusSearch(const Mat& query, Mat& indices, Mat& dists, DistanceType radius, const ::cvflann::SearchParams& searchParams)
+    FLANN_DEPRECATED int radiusSearch(const Mat& query, Mat& indices, Mat& dists, DistanceType radius, const ::cvflann::SearchParams& searchParams)
     {
         CV_Assert(query.type() == CvType<ElementType>::type());
         CV_Assert(query.isContinuous());
@@ -524,32 +429,32 @@ public:
         if (nnIndex_L2) return nnIndex_L2->radiusSearch(m_query,m_indices,m_dists,radius,searchParams);
     }
 
-    CV_DEPRECATED void save(String filename)
+    FLANN_DEPRECATED void save(String filename)
     {
         if (nnIndex_L1) nnIndex_L1->save(filename);
         if (nnIndex_L2) nnIndex_L2->save(filename);
     }
 
-    CV_DEPRECATED int veclen() const
+    FLANN_DEPRECATED int veclen() const
     {
         if (nnIndex_L1) return nnIndex_L1->veclen();
         if (nnIndex_L2) return nnIndex_L2->veclen();
     }
 
-    CV_DEPRECATED int size() const
+    FLANN_DEPRECATED int size() const
     {
         if (nnIndex_L1) return nnIndex_L1->size();
         if (nnIndex_L2) return nnIndex_L2->size();
     }
 
-    CV_DEPRECATED ::cvflann::IndexParams getParameters()
+    FLANN_DEPRECATED ::cvflann::IndexParams getParameters()
     {
         if (nnIndex_L1) return nnIndex_L1->getParameters();
         if (nnIndex_L2) return nnIndex_L2->getParameters();
 
     }
 
-    CV_DEPRECATED const ::cvflann::IndexParams* getIndexParameters()
+    FLANN_DEPRECATED const ::cvflann::IndexParams* getIndexParameters()
     {
         if (nnIndex_L1) return nnIndex_L1->getIndexParameters();
         if (nnIndex_L2) return nnIndex_L2->getIndexParameters();
@@ -561,14 +466,13 @@ private:
     ::cvflann::Index< L1<ElementType> >* nnIndex_L1;
 };
 
-//! @endcond
 
 /** @brief Clusters features using hierarchical k-means algorithm.
 
 @param features The points to be clustered. The matrix must have elements of type
 Distance::ElementType.
 @param centers The centers of the clusters obtained. The matrix must have type
-Distance::CentersType. The number of rows in this matrix represents the number of clusters desired,
+Distance::ResultType. The number of rows in this matrix represents the number of clusters desired,
 however, because of the way the cut in the hierarchical tree is chosen, the number of clusters
 computed will be the highest number of the form (branching-1)\*k+1 that's lower than the number of
 clusters desired, where branching is the tree's branching factor (see description of the
@@ -585,23 +489,23 @@ int hierarchicalClustering(const Mat& features, Mat& centers, const ::cvflann::K
                            Distance d = Distance())
 {
     typedef typename Distance::ElementType ElementType;
-    typedef typename Distance::CentersType CentersType;
+    typedef typename Distance::ResultType DistanceType;
 
     CV_Assert(features.type() == CvType<ElementType>::type());
     CV_Assert(features.isContinuous());
     ::cvflann::Matrix<ElementType> m_features((ElementType*)features.ptr<ElementType>(0), features.rows, features.cols);
 
-    CV_Assert(centers.type() == CvType<CentersType>::type());
+    CV_Assert(centers.type() == CvType<DistanceType>::type());
     CV_Assert(centers.isContinuous());
-    ::cvflann::Matrix<CentersType> m_centers((CentersType*)centers.ptr<CentersType>(0), centers.rows, centers.cols);
+    ::cvflann::Matrix<DistanceType> m_centers((DistanceType*)centers.ptr<DistanceType>(0), centers.rows, centers.cols);
 
     return ::cvflann::hierarchicalClustering<Distance>(m_features, m_centers, params, d);
 }
 
-//! @cond IGNORED
-
+/** @deprecated
+*/
 template <typename ELEM_TYPE, typename DIST_TYPE>
-CV_DEPRECATED int hierarchicalClustering(const Mat& features, Mat& centers, const ::cvflann::KMeansIndexParams& params)
+FLANN_DEPRECATED int hierarchicalClustering(const Mat& features, Mat& centers, const ::cvflann::KMeansIndexParams& params)
 {
     printf("[WARNING] cv::flann::hierarchicalClustering<ELEM_TYPE,DIST_TYPE> is deprecated, use "
         "cv::flann::hierarchicalClustering<Distance> instead\n");
@@ -619,8 +523,6 @@ CV_DEPRECATED int hierarchicalClustering(const Mat& features, Mat& centers, cons
         CV_Assert(0);
     }
 }
-
-//! @endcond
 
 //! @} flann
 

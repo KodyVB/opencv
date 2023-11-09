@@ -52,8 +52,6 @@
 #include "opencv2/core/core_c.h"
 #include <iostream>
 
-#if 0  // fix buffer overflow first (FIXIT mark in .cpp file)
-
 class upnp
 {
 public:
@@ -62,8 +60,6 @@ public:
 
     double compute_pose(cv::Mat& R, cv::Mat& t);
 private:
-    upnp(const upnp &); // copy disabled
-    upnp& operator=(const upnp &); // assign disabled
     template <typename T>
       void init_camera_parameters(const cv::Mat& cameraMatrix)
       {
@@ -134,7 +130,5 @@ private:
       int max_nr;
       double * A1, * A2;
 };
-
-#endif
 
 #endif // OPENCV_CALIB3D_UPNP_H_

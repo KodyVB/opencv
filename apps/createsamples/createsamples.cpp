@@ -45,14 +45,15 @@
  * Create test/training samples
  */
 
-#include "opencv2/core.hpp"
-#include "utility.hpp"
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
+#include <ctime>
 
 using namespace std;
+
+#include "utility.hpp"
 
 int main( int argc, char* argv[] )
 {
@@ -76,7 +77,8 @@ int main( int argc, char* argv[] )
     int width  = 24;
     int height = 24;
     double maxscale = -1.0;
-    int rngseed = 12345;
+
+    srand((unsigned int)time(0));
 
     if( argc == 1 )
     {
@@ -92,10 +94,9 @@ int main( int argc, char* argv[] )
                 "  [-maxzangle <max_z_rotation_angle = %f>]\n"
                 "  [-show [<scale = %f>]]\n"
                 "  [-w <sample_width = %d>]\n  [-h <sample_height = %d>]\n"
-                "  [-maxscale <max sample scale = %f>]\n"
-                "  [-rngseed <rng seed = %d>]\n",
+                "  [-maxscale <max sample scale = %f>]\n",
                 argv[0], num, bgcolor, bgthreshold, maxintensitydev,
-                maxxangle, maxyangle, maxzangle, scale, width, height, maxscale, rngseed );
+                maxxangle, maxyangle, maxzangle, scale, width, height, maxscale );
 
         return 0;
     }
@@ -177,13 +178,7 @@ int main( int argc, char* argv[] )
         {
             maxscale = atof( argv[++i] );
         }
-        else if (!strcmp(argv[i], "-rngseed"))
-        {
-            rngseed = atoi(argv[++i]);
-        }
     }
-
-    cv::setRNGSeed( rngseed );
 
     printf( "Info file name: %s\n", ((infoname == NULL) ?   nullname : infoname ) );
     printf( "Img file name: %s\n",  ((imagename == NULL) ?  nullname : imagename ) );
@@ -205,8 +200,7 @@ int main( int argc, char* argv[] )
     }
     printf( "Width: %d\n", width );
     printf( "Height: %d\n", height );
-    printf( "Max Scale: %g\n", maxscale );
-    printf( "RNG Seed: %d\n", rngseed );
+    printf( "Max Scale: %g\n", maxscale);
 
     /* determine action */
     if( imagename && vecname )

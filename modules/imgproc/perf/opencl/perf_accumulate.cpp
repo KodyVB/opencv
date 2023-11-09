@@ -48,7 +48,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 /////////////////////////////////// Accumulate ///////////////////////////////////
@@ -135,6 +135,6 @@ OCL_PERF_TEST_P(AccumulateWeightedFixture, AccumulateWeighted,
     SANITY_CHECK_NOTHING();
 }
 
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif

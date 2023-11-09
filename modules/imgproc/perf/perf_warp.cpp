@@ -1,9 +1,11 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-namespace opencv_test {
+using namespace std;
+using namespace cv;
+using namespace perf;
+using namespace testing;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 enum{HALF_SIZE=0, UPSIDE_DOWN, REFLECTION_X, REFLECTION_BOTH};
 
@@ -11,10 +13,10 @@ CV_ENUM(BorderMode, BORDER_CONSTANT, BORDER_REPLICATE)
 CV_ENUM(InterType, INTER_NEAREST, INTER_LINEAR)
 CV_ENUM(RemapMode, HALF_SIZE, UPSIDE_DOWN, REFLECTION_X, REFLECTION_BOTH)
 
-typedef TestBaseWithParam< tuple<Size, InterType, BorderMode> > TestWarpAffine;
-typedef TestBaseWithParam< tuple<Size, InterType, BorderMode> > TestWarpPerspective;
-typedef TestBaseWithParam< tuple<Size, InterType, BorderMode, MatType> > TestWarpPerspectiveNear_t;
-typedef TestBaseWithParam< tuple<MatType, Size, InterType, BorderMode, RemapMode> > TestRemap;
+typedef TestBaseWithParam< tr1::tuple<Size, InterType, BorderMode> > TestWarpAffine;
+typedef TestBaseWithParam< tr1::tuple<Size, InterType, BorderMode> > TestWarpPerspective;
+typedef TestBaseWithParam< tr1::tuple<Size, InterType, BorderMode, MatType> > TestWarpPerspectiveNear_t;
+typedef TestBaseWithParam< tr1::tuple<MatType, Size, InterType, BorderMode, RemapMode> > TestRemap;
 
 void update_map(const Mat& src, Mat& map_x, Mat& map_y, const int remapMode );
 
@@ -41,38 +43,8 @@ PERF_TEST_P( TestWarpAffine, WarpAffine,
 
     TEST_CYCLE() warpAffine( src, dst, warpMat, sz, interType, borderMode, borderColor );
 
-#ifdef __ANDROID__
+#ifdef ANDROID
     SANITY_CHECK(dst, interType==INTER_LINEAR? 5 : 10);
-#else
-    SANITY_CHECK(dst, 1);
-#endif
-}
-
-PERF_TEST_P(TestWarpAffine, DISABLED_WarpAffine_ovx,
-    Combine(
-        Values(szVGA, sz720p, sz1080p),
-        InterType::all(),
-        BorderMode::all()
-    )
-)
-{
-    Size sz, szSrc(512, 512);
-    int borderMode, interType;
-    sz = get<0>(GetParam());
-    interType = get<1>(GetParam());
-    borderMode = get<2>(GetParam());
-    Scalar borderColor = Scalar::all(150);
-
-    Mat src(szSrc, CV_8UC1), dst(sz, CV_8UC1);
-    cvtest::fillGradient(src);
-    if (borderMode == BORDER_CONSTANT) cvtest::smoothBorder(src, borderColor, 1);
-    Mat warpMat = getRotationMatrix2D(Point2f(src.cols / 2.f, src.rows / 2.f), 30., 2.2);
-    declare.in(src).out(dst);
-
-    TEST_CYCLE() warpAffine(src, dst, warpMat, sz, interType, borderMode, borderColor);
-
-#ifdef __ANDROID__
-    SANITY_CHECK(dst, interType == INTER_LINEAR ? 5 : 10);
 #else
     SANITY_CHECK(dst, 1);
 #endif
@@ -109,46 +81,8 @@ PERF_TEST_P( TestWarpPerspective, WarpPerspective,
 
     TEST_CYCLE() warpPerspective( src, dst, warpMat, sz, interType, borderMode, borderColor );
 
-#ifdef __ANDROID__
+#ifdef ANDROID
     SANITY_CHECK(dst, interType==INTER_LINEAR? 5 : 10);
-#else
-    SANITY_CHECK(dst, 1);
-#endif
-}
-
-PERF_TEST_P(TestWarpPerspective, DISABLED_WarpPerspective_ovx,
-    Combine(
-        Values(szVGA, sz720p, sz1080p),
-        InterType::all(),
-        BorderMode::all()
-    )
-)
-{
-    Size sz, szSrc(512, 512);
-    int borderMode, interType;
-    sz = get<0>(GetParam());
-    interType = get<1>(GetParam());
-    borderMode = get<2>(GetParam());
-    Scalar borderColor = Scalar::all(150);
-
-    Mat src(szSrc, CV_8UC1), dst(sz, CV_8UC1);
-    cvtest::fillGradient(src);
-    if (borderMode == BORDER_CONSTANT) cvtest::smoothBorder(src, borderColor, 1);
-    Mat rotMat = getRotationMatrix2D(Point2f(src.cols / 2.f, src.rows / 2.f), 30., 2.2);
-    Mat warpMat(3, 3, CV_64FC1);
-    for (int r = 0; r<2; r++)
-        for (int c = 0; c<3; c++)
-            warpMat.at<double>(r, c) = rotMat.at<double>(r, c);
-    warpMat.at<double>(2, 0) = .3 / sz.width;
-    warpMat.at<double>(2, 1) = .3 / sz.height;
-    warpMat.at<double>(2, 2) = 1;
-
-    declare.in(src).out(dst);
-
-    TEST_CYCLE() warpPerspective(src, dst, warpMat, sz, interType, borderMode, borderColor);
-
-#ifdef __ANDROID__
-    SANITY_CHECK(dst, interType == INTER_LINEAR ? 5 : 10);
 #else
     SANITY_CHECK(dst, 1);
 #endif
@@ -193,7 +127,7 @@ PERF_TEST_P( TestWarpPerspectiveNear_t, WarpPerspectiveNear,
         warpPerspective( src, dst, warpMat, size, interType, borderMode, borderColor );
     }
 
-#ifdef __ANDROID__
+#ifdef ANDROID
     SANITY_CHECK(dst, interType==INTER_LINEAR? 5 : 10);
 #else
     SANITY_CHECK(dst, 1);
@@ -202,8 +136,8 @@ PERF_TEST_P( TestWarpPerspectiveNear_t, WarpPerspectiveNear,
 
 PERF_TEST_P( TestRemap, remap,
              Combine(
-                 Values( CV_8UC1, CV_8UC3, CV_8UC4, CV_32FC1 ),
-                 Values( szVGA, sz1080p ),
+                 Values( TYPICAL_MAT_TYPES ),
+                 Values( szVGA, sz720p, sz1080p ),
                  InterType::all(),
                  BorderMode::all(),
                  RemapMode::all()
@@ -231,7 +165,7 @@ PERF_TEST_P( TestRemap, remap,
         remap(source, destination, map_x, map_y, interpolationType, borderMode);
     }
 
-    SANITY_CHECK_NOTHING();
+    SANITY_CHECK(destination, 1);
 }
 
 void update_map(const Mat& src, Mat& map_x, Mat& map_y, const int remapMode )
@@ -271,7 +205,7 @@ void update_map(const Mat& src, Mat& map_x, Mat& map_y, const int remapMode )
     }
 }
 
-PERF_TEST(Transform, getPerspectiveTransform_1000)
+PERF_TEST(Transform, getPerspectiveTransform)
 {
     unsigned int size = 8;
     Mat source(1, size/2, CV_32FC2);
@@ -280,33 +214,10 @@ PERF_TEST(Transform, getPerspectiveTransform_1000)
 
     declare.in(source, destination, WARMUP_RNG);
 
-    PERF_SAMPLE_BEGIN()
-    for (int i = 0; i < 1000; i++)
+    TEST_CYCLE()
     {
         transformCoefficient = getPerspectiveTransform(source, destination);
     }
-    PERF_SAMPLE_END()
 
-    SANITY_CHECK_NOTHING();
+    SANITY_CHECK(transformCoefficient, 1e-5);
 }
-
-PERF_TEST(Transform, getPerspectiveTransform_QR_1000)
-{
-    unsigned int size = 8;
-    Mat source(1, size/2, CV_32FC2);
-    Mat destination(1, size/2, CV_32FC2);
-    Mat transformCoefficient;
-
-    declare.in(source, destination, WARMUP_RNG);
-
-    PERF_SAMPLE_BEGIN()
-    for (int i = 0; i < 1000; i++)
-    {
-        transformCoefficient = getPerspectiveTransform(source, destination, DECOMP_QR);
-    }
-    PERF_SAMPLE_END()
-
-    SANITY_CHECK_NOTHING();
-}
-
-} // namespace

@@ -1,6 +1,3 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
 #include "precomp.hpp"
 #include <sstream>
 
@@ -13,7 +10,7 @@ static const char* noneValue = "<none>";
 static String cat_string(const String& str)
 {
     int left = 0, right = (int)str.length();
-    while( left < right && str[left] == ' ' )
+    while( left <= right && str[left] == ' ' )
         left++;
     while( right > left && str[right-1] == ' ' )
         right--;
@@ -53,7 +50,7 @@ struct CommandLineParser::Impl
 };
 
 
-static const char* get_type_name(Param type)
+static const char* get_type_name(int type)
 {
     if( type == Param::INT )
         return "int";
@@ -72,16 +69,7 @@ static const char* get_type_name(Param type)
     return "unknown";
 }
 
-static bool parse_bool(std::string str)
-{
-    std::transform(str.begin(), str.end(), str.begin(), details::char_tolower);
-    std::istringstream is(str);
-    bool b;
-    is >> (str.size() > 1 ? std::boolalpha : std::noboolalpha) >> b;
-    return b;
-}
-
-static void from_str(const String& str, Param type, void* dst)
+static void from_str(const String& str, int type, void* dst)
 {
     std::stringstream ss(str.c_str());
     if( type == Param::INT )
@@ -90,7 +78,7 @@ static void from_str(const String& str, Param type, void* dst)
     {
         std::string temp;
         ss >> temp;
-        *(bool*) dst = parse_bool(temp);
+        *(bool*) dst = temp == "true";
     }
     else if( type == Param::UNSIGNED_INT )
         ss >> *(unsigned*)dst;
@@ -102,12 +90,6 @@ static void from_str(const String& str, Param type, void* dst)
         ss >> *(double*)dst;
     else if( type == Param::STRING )
         *(String*)dst = str;
-    else if( type == Param::SCALAR)
-    {
-        Scalar& scalar = *(Scalar*)dst;
-        for (int i = 0; i < 4 && !ss.eof(); ++i)
-            ss >> scalar[i];
-    }
     else
         CV_Error(Error::StsBadArg, "unknown/unsupported parameter type");
 
@@ -117,7 +99,7 @@ static void from_str(const String& str, Param type, void* dst)
     }
 }
 
-void CommandLineParser::getByName(const String& name, bool space_delete, Param type, void* dst) const
+void CommandLineParser::getByName(const String& name, bool space_delete, int type, void* dst) const
 {
     try
     {
@@ -131,7 +113,7 @@ void CommandLineParser::getByName(const String& name, bool space_delete, Param t
                     if (space_delete)
                         v = cat_string(v);
 
-                    // the key was neither specified nor has a default value
+                    // the key was neither specified nor has it a default value
                     if((v.empty() && type != Param::STRING) || v == noneValue) {
                         impl->error = true;
                         impl->error_message = impl->error_message + "Missing parameter: '" + name + "'\n";
@@ -144,7 +126,7 @@ void CommandLineParser::getByName(const String& name, bool space_delete, Param t
             }
         }
     }
-    catch (const Exception& e)
+    catch (Exception& e)
     {
         impl->error = true;
         impl->error_message = impl->error_message + "Parameter '"+ name + "': " + e.err + "\n";
@@ -155,7 +137,7 @@ void CommandLineParser::getByName(const String& name, bool space_delete, Param t
 }
 
 
-void CommandLineParser::getByIndex(int index, bool space_delete, Param type, void* dst) const
+void CommandLineParser::getByIndex(int index, bool space_delete, int type, void* dst) const
 {
     try
     {
@@ -166,7 +148,7 @@ void CommandLineParser::getByIndex(int index, bool space_delete, Param type, voi
                 String v = impl->data[i].def_value;
                 if (space_delete == true) v = cat_string(v);
 
-                // the key was neither specified nor has a default value
+                // the key was neither specified nor has it a default value
                 if((v.empty() && type != Param::STRING) || v == noneValue) {
                     impl->error = true;
                     impl->error_message = impl->error_message + format("Missing parameter #%d\n", index);
@@ -177,7 +159,7 @@ void CommandLineParser::getByIndex(int index, bool space_delete, Param type, voi
             }
         }
     }
-    catch (const Exception& e)
+    catch(Exception& e)
     {
         impl->error = true;
         impl->error_message = impl->error_message + format("Parameter #%d: ", index) + e.err + "\n";
@@ -294,10 +276,10 @@ CommandLineParser& CommandLineParser::operator = (const CommandLineParser& parse
 {
     if( this != &parser )
     {
-        CV_XADD(&parser.impl->refcount, 1);
         if(CV_XADD(&impl->refcount, -1) == 1)
             delete impl;
         impl = parser.impl;
+        CV_XADD(&impl->refcount, 1);
     }
     return *this;
 }
@@ -364,6 +346,7 @@ bool CommandLineParser::has(const String& name) const
     }
 
     CV_Error_(Error::StsBadArg, ("undeclared key '%s' requested", name.c_str()));
+    return false;
 }
 
 bool CommandLineParser::check() const

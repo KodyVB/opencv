@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -42,9 +42,8 @@
 #include <ImfPreviewImageAttribute.h>
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_ENTER
+namespace Imf {
 
-using namespace OPENEXR_IMF_INTERNAL_NAMESPACE;
 
 template <>
 const char *
@@ -56,7 +55,7 @@ PreviewImageAttribute::staticTypeName ()
 
 template <>
 void
-PreviewImageAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, int version) const
+PreviewImageAttribute::writeValueTo (OStream &os, int) const
 {
     Xdr::write <StreamIO> (os, _value.width());
     Xdr::write <StreamIO> (os, _value.height());
@@ -66,17 +65,17 @@ PreviewImageAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os
 
     for (int i = 0; i < numPixels; ++i)
     {
-	Xdr::write <StreamIO> (os, pixels[i].r);
-	Xdr::write <StreamIO> (os, pixels[i].g);
-	Xdr::write <StreamIO> (os, pixels[i].b);
-	Xdr::write <StreamIO> (os, pixels[i].a);
+    Xdr::write <StreamIO> (os, pixels[i].r);
+    Xdr::write <StreamIO> (os, pixels[i].g);
+    Xdr::write <StreamIO> (os, pixels[i].b);
+    Xdr::write <StreamIO> (os, pixels[i].a);
     }
 }
 
 
 template <>
 void
-PreviewImageAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &is, int size, int version)
+PreviewImageAttribute::readValueFrom (IStream &is, int, int)
 {
     int width, height;
 
@@ -90,14 +89,14 @@ PreviewImageAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &i
 
     for (int i = 0; i < numPixels; ++i)
     {
-	Xdr::read <StreamIO> (is, pixels[i].r);
-	Xdr::read <StreamIO> (is, pixels[i].g);
-	Xdr::read <StreamIO> (is, pixels[i].b);
-	Xdr::read <StreamIO> (is, pixels[i].a);
+    Xdr::read <StreamIO> (is, pixels[i].r);
+    Xdr::read <StreamIO> (is, pixels[i].g);
+    Xdr::read <StreamIO> (is, pixels[i].b);
+    Xdr::read <StreamIO> (is, pixels[i].a);
     }
 
     _value = p;
 }
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_SOURCE_EXIT 
+} // namespace Imf

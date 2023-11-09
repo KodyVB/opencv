@@ -47,7 +47,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+namespace cvtest {
 namespace ocl {
 
 ////////////////////////////////////////////////////////////////////////////
@@ -66,8 +66,6 @@ PARAM_TEST_CASE(Gemm,
     bool atrans, btrans, ctrans;
 
     double alpha, beta;
-
-    int M, N, K;
 
     TEST_DECLARE_INPUT_PARAMETER(A);
     TEST_DECLARE_INPUT_PARAMETER(B);
@@ -92,27 +90,30 @@ PARAM_TEST_CASE(Gemm,
 
     void generateTestData()
     {
-        M = (int)randomDoubleLog(1, 100);
-        N = (int)randomDoubleLog(1, 100);
-        K = (int)randomDoubleLog(1, 1200);
-
-        M = roundUp(M, 1);
-        N = roundUp(N, 1);
-        K = roundUp(K, 1);
-
-        Size ARoiSize = (atrans) ? Size(M, K) : Size(K, M);
+        // set minimum size to 20, since testing less sizes doesn't make sense
+        Size ARoiSize = randomSize(20, MAX_VALUE);
         Border ABorder = randomBorder(0, use_roi ? MAX_VALUE : 0);
         randomSubMat(A, A_roi, ARoiSize, ABorder, type, -11, 11);
 
-        Size BRoiSize = (btrans) ? Size(K, N) : Size(N, K);
+        if (atrans)
+            ARoiSize = Size(ARoiSize.height, ARoiSize.width);
+
+        Size BRoiSize = randomSize(20, MAX_VALUE);
+        if (btrans)
+            BRoiSize.width = ARoiSize.width;
+        else
+            BRoiSize.height = ARoiSize.width;
+
         Border BBorder = randomBorder(0, use_roi ? MAX_VALUE : 0);
         randomSubMat(B, B_roi, BRoiSize, BBorder, type, -11, 11);
 
-        Size CRoiSize = (ctrans) ? Size(M, N) : Size(N, M);
-        Border CBorder = randomBorder(0, use_roi ? MAX_VALUE : 0);
-        randomSubMat(C, C_roi, CRoiSize, CBorder, type, -11, 11);
+        if (btrans)
+            BRoiSize = Size(BRoiSize.height, BRoiSize.width);
 
-        Size DRoiSize = Size(N, M);
+        Size DRoiSize = Size(BRoiSize.width, ARoiSize.height), CRoiSizeT(DRoiSize.height, DRoiSize.width);
+        Border CBorder = randomBorder(0, use_roi ? MAX_VALUE : 0);
+        randomSubMat(C, C_roi, ctrans ? CRoiSizeT : DRoiSize, CBorder, type, -11, 11);
+
         Border DBorder = randomBorder(0, use_roi ? MAX_VALUE : 0);
         randomSubMat(D, D_roi, DRoiSize, DBorder, type, -11, 11);
 
@@ -131,12 +132,11 @@ OCL_TEST_P(Gemm, Accuracy)
     for (int i = 0; i < test_loop_times; ++i)
     {
         generateTestData();
-        SCOPED_TRACE(cv::format("i=%d: M=%d N=%d K=%d", i, M, N, K));
 
         OCL_OFF(cv::gemm(A_roi, B_roi, alpha, C_roi, beta, D_roi, flags));
         OCL_ON(cv::gemm(uA_roi, uB_roi, alpha, uC_roi, beta, uD_roi, flags));
 
-        double eps = D_roi.size().area() * (1e-5 * K);
+        double eps = D_roi.size().area() * 1e-4;
         OCL_EXPECT_MATS_NEAR(D, eps);
     }
 }
@@ -145,21 +145,6 @@ OCL_INSTANTIATE_TEST_CASE_P(Core, Gemm, ::testing::Combine(
                             testing::Values(CV_32FC1, CV_32FC2, CV_64FC1, CV_64FC2),
                             Bool(), Bool(), Bool(), Bool()));
 
-// Test for non-Intel GPUs to check CL_INVALID_WORK_GROUP_SIZE when localsize > globalsize
-OCL_TEST(Gemm, small)
-{
-    UMat A(2, 3, CV_32F), B(4, 3, CV_32F), uC(2, 4, CV_32F);
-    Mat C(2, 4, CV_32F);
-
-    randu(A, -1, 1);
-    randu(B, -1, 1);
-
-    OCL_OFF(cv::gemm(A, B, 1, noArray(), 0, C, GEMM_2_T));
-    OCL_ON(cv::gemm(A, B, 1, noArray(), 0, uC, GEMM_2_T));
-
-    EXPECT_LE(cvtest::norm(C, uC, cv::NORM_INF), 1e-5);
-}
-
-} } // namespace opencv_test::ocl
+} } // namespace cvtest::ocl
 
 #endif // HAVE_OPENCL

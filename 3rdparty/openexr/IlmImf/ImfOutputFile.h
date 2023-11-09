@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -43,18 +43,17 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "ImfHeader.h"
-#include "ImfFrameBuffer.h"
-#include "ImfThreading.h"
-#include "ImfGenericOutputFile.h"
-#include "ImfNamespace.h"
-#include "ImfForward.h"
-#include "ImfExport.h"
+#include <ImfHeader.h>
+#include <ImfFrameBuffer.h>
+#include <ImfThreading.h>
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+namespace Imf {
+
+class InputFile;
+struct PreviewRgba;
 
 
-class OutputFile : public GenericOutputFile
+class OutputFile
 {
   public:
 
@@ -69,7 +68,6 @@ class OutputFile : public GenericOutputFile
     // used to write the file (see ImfThreading.h).
     //-----------------------------------------------------------
 
-    IMF_EXPORT
     OutputFile (const char fileName[], const Header &header,
                 int numThreads = globalThreadCount());
 
@@ -86,8 +84,7 @@ class OutputFile : public GenericOutputFile
     // used to write the file (see ImfThreading.h).
     //------------------------------------------------------------
 
-    IMF_EXPORT
-    OutputFile (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &os, const Header &header,
+    OutputFile (OStream &os, const Header &header,
                 int numThreads = globalThreadCount());
 
 
@@ -99,7 +96,6 @@ class OutputFile : public GenericOutputFile
     // an incomplete file.
     //-------------------------------------------------
 
-    IMF_EXPORT
     virtual ~OutputFile ();
 
 
@@ -107,7 +103,6 @@ class OutputFile : public GenericOutputFile
     // Access to the file name
     //------------------------
 
-    IMF_EXPORT
     const char *	fileName () const;
 
 
@@ -115,7 +110,6 @@ class OutputFile : public GenericOutputFile
     // Access to the file header
     //--------------------------
 
-    IMF_EXPORT
     const Header &	header () const;
 
 
@@ -130,7 +124,6 @@ class OutputFile : public GenericOutputFile
     // after each call to writePixels.
     //-------------------------------------------------------
 
-    IMF_EXPORT
     void		setFrameBuffer (const FrameBuffer &frameBuffer);
 
 
@@ -138,7 +131,6 @@ class OutputFile : public GenericOutputFile
     // Access to the current frame buffer
     //-----------------------------------
 
-    IMF_EXPORT
     const FrameBuffer &	frameBuffer () const;
 
 
@@ -155,7 +147,6 @@ class OutputFile : public GenericOutputFile
     // header().dataWindow().max.y - header().dataWindow().min.y + 1.
     //-------------------------------------------------------------------
 
-    IMF_EXPORT
     void		writePixels (int numScanLines = 1);
 
 
@@ -180,7 +171,6 @@ class OutputFile : public GenericOutputFile
     //
     //------------------------------------------------------------------
 
-    IMF_EXPORT
     int			currentScanLine () const;
 
 
@@ -192,17 +182,7 @@ class OutputFile : public GenericOutputFile
     // "lineOrder" and "channels" attributes must be the same.
     //--------------------------------------------------------------
 
-    IMF_EXPORT
     void		copyPixels (InputFile &in);
-    
-    //-------------------------------------------------------------
-    // Shortcut to copy all pixels from an InputPart into this file
-    // - equivalent to copyPixel(InputFile &in) but for multipart files
-    //---------------------------------------------------------------
-    
-    IMF_EXPORT
-    void                copyPixels (InputPart &in);
-        
 
 
     //--------------------------------------------------------------
@@ -211,7 +191,7 @@ class OutputFile : public GenericOutputFile
     // updatePreviewImage() supplies a new set of pixels for the
     // preview image attribute in the file's header.  If the header
     // does not contain a preview image, updatePreviewImage() throws
-    // an IEX_NAMESPACE::LogicExc.
+    // an Iex::LogicExc.
     //
     // Note: updatePreviewImage() is necessary because images are
     // often stored in a file incrementally, a few scan lines at a
@@ -223,13 +203,12 @@ class OutputFile : public GenericOutputFile
     //
     //--------------------------------------------------------------
 
-    IMF_EXPORT
     void		updatePreviewImage (const PreviewRgba newPixels[]);
 
 
     //---------------------------------------------------------
     // Break a scan line -- for testing and debugging only:
-    // 
+    //
     // breakScanLine(y,p,n,c) introduces an error into the
     // output file by writing n copies of character c, starting
     // p bytes from the beginning of the pixel data block that
@@ -241,7 +220,6 @@ class OutputFile : public GenericOutputFile
     //
     //---------------------------------------------------------
 
-    IMF_EXPORT
     void		breakScanLine  (int y, int offset, int length, char c);
 
 
@@ -249,28 +227,15 @@ class OutputFile : public GenericOutputFile
 
   private:
 
-    //------------------------------------------------------------
-    // Constructor -- attaches the OutputStreamMutex to the
-    // given one from MultiPartOutputFile. Set the previewPosition
-    // and lineOffsetsPosition which have been acquired from
-    // the constructor of MultiPartOutputFile as well.
-    //------------------------------------------------------------
-    OutputFile (const OutputPartData* part);
-
     OutputFile (const OutputFile &);			// not implemented
     OutputFile & operator = (const OutputFile &);	// not implemented
 
     void		initialize (const Header &header);
 
     Data *		_data;
-
-
-    friend class MultiPartOutputFile;
-    
 };
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
-
+} // namespace Imf
 
 #endif

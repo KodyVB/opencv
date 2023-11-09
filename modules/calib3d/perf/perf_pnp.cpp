@@ -1,19 +1,25 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+#ifdef HAVE_TBB
+#include "tbb/task_scheduler_init.h"
+#endif
+
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
 CV_ENUM(pnpAlgo, SOLVEPNP_ITERATIVE, SOLVEPNP_EPNP, SOLVEPNP_P3P, SOLVEPNP_DLS, SOLVEPNP_UPNP)
 
-typedef tuple<int, pnpAlgo> PointsNum_Algo_t;
+typedef std::tr1::tuple<int, pnpAlgo> PointsNum_Algo_t;
 typedef perf::TestBaseWithParam<PointsNum_Algo_t> PointsNum_Algo;
 
 typedef perf::TestBaseWithParam<int> PointsNum;
 
 PERF_TEST_P(PointsNum_Algo, solvePnP,
-            testing::Combine( //When non planar, DLT needs at least 6 points for SOLVEPNP_ITERATIVE flag
-                testing::Values(6, 3*9, 7*13), //TODO: find why results on 4 points are too unstable
+            testing::Combine(
+                testing::Values(5, 3*9, 7*13), //TODO: find why results on 4 points are too unstable
                 testing::Values((int)SOLVEPNP_ITERATIVE, (int)SOLVEPNP_EPNP, (int)SOLVEPNP_UPNP, (int)SOLVEPNP_DLS)
                 )
             )
@@ -42,18 +48,18 @@ PERF_TEST_P(PointsNum_Algo, solvePnP,
     //add noise
     Mat noise(1, (int)points2d.size(), CV_32FC2);
     randu(noise, 0, 0.01);
-    cv::add(points2d, noise, points2d);
+    add(points2d, noise, points2d);
 
     declare.in(points3d, points2d);
     declare.time(100);
 
     TEST_CYCLE_N(1000)
     {
-        cv::solvePnP(points3d, points2d, intrinsics, distortion, rvec, tvec, false, algo);
+        solvePnP(points3d, points2d, intrinsics, distortion, rvec, tvec, false, algo);
     }
 
-    SANITY_CHECK(rvec, 1e-4);
-    SANITY_CHECK(tvec, 1e-4);
+    SANITY_CHECK(rvec, 1e-6);
+    SANITY_CHECK(tvec, 1e-6);
 }
 
 PERF_TEST_P(PointsNum_Algo, solvePnPSmallPoints,
@@ -86,22 +92,22 @@ PERF_TEST_P(PointsNum_Algo, solvePnPSmallPoints,
 
     // normalize Rodrigues vector
     Mat rvec_tmp = Mat::eye(3, 3, CV_32F);
-    cv::Rodrigues(rvec, rvec_tmp);
-    cv::Rodrigues(rvec_tmp, rvec);
+    Rodrigues(rvec, rvec_tmp);
+    Rodrigues(rvec_tmp, rvec);
 
-    cv::projectPoints(points3d, rvec, tvec, intrinsics, distortion, points2d);
+    projectPoints(points3d, rvec, tvec, intrinsics, distortion, points2d);
 
     //add noise
     Mat noise(1, (int)points2d.size(), CV_32FC2);
     randu(noise, -0.001, 0.001);
-    cv::add(points2d, noise, points2d);
+    add(points2d, noise, points2d);
 
     declare.in(points3d, points2d);
     declare.time(100);
 
     TEST_CYCLE_N(1000)
     {
-        cv::solvePnP(points3d, points2d, intrinsics, distortion, rvec, tvec, false, algo);
+        solvePnP(points3d, points2d, intrinsics, distortion, rvec, tvec, false, algo);
     }
 
     SANITY_CHECK(rvec, 1e-1);
@@ -138,13 +144,16 @@ PERF_TEST_P(PointsNum, DISABLED_SolvePnPRansac, testing::Values(5, 3*9, 7*13))
     Mat rvec;
     Mat tvec;
 
+#ifdef HAVE_TBB
+    // limit concurrency to get deterministic result
+    tbb::task_scheduler_init one_thread(1);
+#endif
+
     TEST_CYCLE()
     {
-        cv::solvePnPRansac(object, image, camera_mat, dist_coef, rvec, tvec);
+        solvePnPRansac(object, image, camera_mat, dist_coef, rvec, tvec);
     }
 
     SANITY_CHECK(rvec, 1e-6);
     SANITY_CHECK(tvec, 1e-6);
 }
-
-} // namespace

@@ -87,11 +87,11 @@ static void onTrackbar( int, void* )
     imshow("Distance Map", dist8u );
 }
 
-static void help(const char** argv)
+static void help()
 {
     printf("\nProgram to demonstrate the use of the distance transform function between edge images.\n"
             "Usage:\n"
-            "%s [image_name -- default image is stuff.jpg]\n"
+            "./distrans [image_name -- default image is ../data/stuff.jpg]\n"
             "\nHot keys: \n"
             "\tESC - quit the program\n"
             "\tC - use C/Inf metric\n"
@@ -102,26 +102,26 @@ static void help(const char** argv)
             "\t0 - use precise distance transform\n"
             "\tv - switch to Voronoi diagram mode\n"
             "\tp - switch to pixel-based Voronoi diagram mode\n"
-            "\tSPACE - loop through all the modes\n\n", argv[0]);
+            "\tSPACE - loop through all the modes\n\n");
 }
 
 const char* keys =
 {
-    "{help h||}{@image |stuff.jpg|input image file}"
+    "{help h||}{@image |../data/stuff.jpg|input image file}"
 };
 
 int main( int argc, const char** argv )
 {
     CommandLineParser parser(argc, argv, keys);
-    help(argv);
+    help();
     if (parser.has("help"))
         return 0;
     string filename = parser.get<string>(0);
-    gray = imread(samples::findFile(filename), 0);
+    gray = imread(filename, 0);
     if(gray.empty())
     {
         printf("Cannot read image file: %s\n", filename.c_str());
-        help(argv);
+        help();
         return -1;
     }
 

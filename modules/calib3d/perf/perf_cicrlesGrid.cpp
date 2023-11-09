@@ -1,10 +1,12 @@
 #include "perf_precomp.hpp"
 
-namespace opencv_test
-{
+using namespace std;
+using namespace cv;
 using namespace perf;
+using std::tr1::make_tuple;
+using std::tr1::get;
 
-typedef tuple<std::string, cv::Size> String_Size_t;
+typedef std::tr1::tuple<std::string, cv::Size> String_Size_t;
 typedef perf::TestBaseWithParam<String_Size_t> String_Size;
 
 PERF_TEST_P(String_Size, asymm_circles_grid, testing::Values(
@@ -38,5 +40,3 @@ PERF_TEST_P(String_Size, asymm_circles_grid, testing::Values(
 
     SANITY_CHECK(ptvec, 2);
 }
-
-} // namespace

@@ -3,7 +3,21 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test {
+#if defined(HAVE_XINE)     || \
+defined(HAVE_GSTREAMER)    || \
+defined(HAVE_QUICKTIME)    || \
+defined(HAVE_AVFOUNDATION) || \
+defined(HAVE_FFMPEG)       || \
+defined(WIN32)
+
+#  define BUILD_WITH_VIDEO_INPUT_SUPPORT 1
+#else
+#  define BUILD_WITH_VIDEO_INPUT_SUPPORT 0
+#endif
+
+#if BUILD_WITH_VIDEO_INPUT_SUPPORT
+
+namespace cvtest {
 namespace ocl {
 
 //////////////////////////Mog2_Update///////////////////////////////////
@@ -32,8 +46,7 @@ OCL_TEST_P(Mog2_Update, Accuracy)
 {
     string inputFile = string(TS::ptr()->get_data_path()) + "video/768x576.avi";
     VideoCapture cap(inputFile);
-    if (!cap.isOpened())
-        throw SkipTestException("Video file can not be opened");
+    ASSERT_TRUE(cap.isOpened());
 
     Ptr<BackgroundSubtractorMOG2> mog2_cpu = createBackgroundSubtractorMOG2();
     Ptr<BackgroundSubtractorMOG2> mog2_ocl = createBackgroundSubtractorMOG2();
@@ -90,8 +103,7 @@ OCL_TEST_P(Mog2_getBackgroundImage, Accuracy)
 {
     string inputFile = string(TS::ptr()->get_data_path()) + "video/768x576.avi";
     VideoCapture cap(inputFile);
-    if (!cap.isOpened())
-        throw SkipTestException("Video file can not be opened");
+    ASSERT_TRUE(cap.isOpened());
 
     Ptr<BackgroundSubtractorMOG2> mog2_cpu = createBackgroundSubtractorMOG2();
     Ptr<BackgroundSubtractorMOG2> mog2_ocl = createBackgroundSubtractorMOG2();
@@ -140,6 +152,7 @@ OCL_INSTANTIATE_TEST_CASE_P(OCL_Video, Mog2_getBackgroundImage, Combine(
                                                      Values(UseFloat(false),UseFloat(true)))
                            );
 
-}}// namespace opencv_test::ocl
+}}// namespace cvtest::ocl
 
+    #endif
 #endif

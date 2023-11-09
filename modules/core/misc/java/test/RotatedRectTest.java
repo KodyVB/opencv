@@ -1,15 +1,10 @@
 package org.opencv.test.core;
 
-import org.opencv.core.CvType;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.RotatedRect;
-import org.opencv.core.MatOfRotatedRect;
 import org.opencv.core.Size;
 import org.opencv.test.OpenCVTestCase;
-
-import java.util.Arrays;
-import java.util.List;
 
 public class RotatedRectTest extends OpenCVTestCase {
 
@@ -48,7 +43,7 @@ public class RotatedRectTest extends OpenCVTestCase {
         RotatedRect rrect = new RotatedRect(center, size, angle);
         RotatedRect clone = rrect.clone();
 
-        assertNotNull(clone);
+        assertTrue(clone != null);
         assertTrue(rrect.center.equals(clone.center));
         assertTrue(rrect.size.equals(clone.size));
         assertTrue(rrect.angle == clone.angle);
@@ -66,24 +61,24 @@ public class RotatedRectTest extends OpenCVTestCase {
         RotatedRect clone2 = rrect2.clone();
 
         assertTrue(rrect1.equals(rrect3));
-        assertFalse(rrect1.equals(rrect2));
+        assertTrue(!rrect1.equals(rrect2));
 
         assertTrue(rrect2.equals(clone2));
         clone2.angle = 10;
-        assertFalse(rrect2.equals(clone2));
+        assertTrue(!rrect2.equals(clone2));
 
         assertTrue(rrect1.equals(clone1));
 
         clone1.center.x += 1;
-        assertFalse(rrect1.equals(clone1));
+        assertTrue(!rrect1.equals(clone1));
 
         clone1.center.x -= 1;
         assertTrue(rrect1.equals(clone1));
 
         clone1.size.width += 1;
-        assertFalse(rrect1.equals(clone1));
+        assertTrue(!rrect1.equals(clone1));
 
-        assertFalse(rrect1.equals(size));
+        assertTrue(!rrect1.equals(size));
     }
 
     public void testHashCode() {
@@ -140,10 +135,10 @@ public class RotatedRectTest extends OpenCVTestCase {
     public void testRotatedRect() {
         RotatedRect rr = new RotatedRect();
 
-        assertNotNull(rr);
-        assertNotNull(rr.center);
-        assertNotNull(rr.size);
-        assertEquals(0.0, rr.angle);
+        assertTrue(rr != null);
+        assertTrue(rr.center != null);
+        assertTrue(rr.size != null);
+        assertTrue(rr.angle == 0.0);
     }
 
     public void testRotatedRectDoubleArray() {
@@ -161,10 +156,10 @@ public class RotatedRectTest extends OpenCVTestCase {
     public void testRotatedRectPointSizeDouble() {
         RotatedRect rr = new RotatedRect(center, size, 40);
 
-        assertNotNull(rr);
-        assertNotNull(rr.center);
-        assertNotNull(rr.size);
-        assertEquals(40.0, rr.angle);
+        assertTrue(rr != null);
+        assertTrue(rr.center != null);
+        assertTrue(rr.size != null);
+        assertTrue(rr.angle == 40.0);
     }
 
     public void testSet() {
@@ -193,21 +188,4 @@ public class RotatedRectTest extends OpenCVTestCase {
         assertEquals(expected, actual);
     }
 
-    public void testMatOfRotatedRect() {
-        RotatedRect a = new RotatedRect(new Point(1,2),new Size(3,4),5.678);
-        RotatedRect b = new RotatedRect(new Point(9,8),new Size(7,6),5.432);
-        MatOfRotatedRect m = new MatOfRotatedRect(a,b,a,b,a,b,a,b);
-        assertEquals(m.rows(), 8);
-        assertEquals(m.cols(), 1);
-        assertEquals(m.type(), CvType.CV_32FC(5));
-        RotatedRect[] arr = m.toArray();
-        assertEquals(arr[2].angle, a.angle, EPS);
-        assertEquals(arr[3].center.x, b.center.x);
-        assertEquals(arr[3].size.width, b.size.width);
-        List<RotatedRect> li = m.toList();
-        assertEquals(li.size(), 8);
-        RotatedRect rr = li.get(7);
-        assertEquals(rr.angle, b.angle, EPS);
-        assertEquals(rr.center.y, b.center.y);
-    }
 }

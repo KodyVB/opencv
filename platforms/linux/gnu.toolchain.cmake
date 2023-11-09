@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 2.8)
 
 # load settings in case of "try compile"
 set(TOOLCHAIN_CONFIG_FILE "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/toolchain.config.cmake")
@@ -56,50 +56,16 @@ else()
   endmacro()
 endif() # IN_TRY_COMPILE
 
-if(NOT CMAKE_FIND_ROOT_PATH_MODE_LIBRARY)
-  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-endif()
-
-if(NOT CMAKE_FIND_ROOT_PATH_MODE_INCLUDE)
-  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-endif()
-
-if(NOT CMAKE_FIND_ROOT_PATH_MODE_PACKAGE)
-  set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-endif()
-
-if(NOT CMAKE_FIND_ROOT_PATH_MODE_PROGRAM)
-  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-endif()
-
-macro(__cmake_find_root_save_and_reset)
-  foreach(v
-      CMAKE_FIND_ROOT_PATH_MODE_LIBRARY
-      CMAKE_FIND_ROOT_PATH_MODE_INCLUDE
-      CMAKE_FIND_ROOT_PATH_MODE_PACKAGE
-      CMAKE_FIND_ROOT_PATH_MODE_PROGRAM
-  )
-    set(__save_${v} ${${v}})
-    set(${v} NEVER)
-  endforeach()
-endmacro()
-
-macro(__cmake_find_root_restore)
-  foreach(v
-      CMAKE_FIND_ROOT_PATH_MODE_LIBRARY
-      CMAKE_FIND_ROOT_PATH_MODE_INCLUDE
-      CMAKE_FIND_ROOT_PATH_MODE_PACKAGE
-      CMAKE_FIND_ROOT_PATH_MODE_PROGRAM
-  )
-    set(${v} ${__save_${v}})
-    unset(__save_${v})
-  endforeach()
-endmacro()
-
+set(CMAKE_SKIP_RPATH TRUE)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
 
 # macro to find programs on the host OS
 macro(find_host_program)
- __cmake_find_root_save_and_reset()
+ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
+ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
  if(CMAKE_HOST_WIN32)
   SET(WIN32 1)
   SET(UNIX)
@@ -111,12 +77,16 @@ macro(find_host_program)
  SET(WIN32)
  SET(APPLE)
  SET(UNIX 1)
- __cmake_find_root_restore()
+ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
+ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro()
 
 # macro to find packages on the host OS
 macro(find_host_package)
- __cmake_find_root_save_and_reset()
+ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
+ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
  if(CMAKE_HOST_WIN32)
   SET(WIN32 1)
   SET(UNIX)
@@ -128,7 +98,9 @@ macro(find_host_package)
  SET(WIN32)
  SET(APPLE)
  SET(UNIX 1)
- __cmake_find_root_restore()
+ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
+ set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro()
 
 set(CMAKE_SKIP_RPATH TRUE CACHE BOOL "If set, runtime paths are not added when using shared libraries.")

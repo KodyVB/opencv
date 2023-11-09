@@ -9,32 +9,33 @@
 using namespace cv;
 using namespace std;
 
-static void help(const char ** argv)
+static void help()
 {
     printf("\nThis program demonstrated the use of the discrete Fourier transform (dft)\n"
            "The dft of an image is taken and it's power spectrum is displayed.\n"
-           "Usage:\n %s [image_name -- default lena.jpg]\n",argv[0]);
+           "Usage:\n"
+            "./dft [image_name -- default ../data/lena.jpg]\n");
 }
 
 const char* keys =
 {
-    "{help h||}{@image|lena.jpg|input image file}"
+    "{help h||}{@image|../data/lena.jpg|input image file}"
 };
 
 int main(int argc, const char ** argv)
 {
-    help(argv);
+    help();
     CommandLineParser parser(argc, argv, keys);
     if (parser.has("help"))
     {
-        help(argv);
+        help();
         return 0;
     }
     string filename = parser.get<string>(0);
-    Mat img = imread(samples::findFile(filename), IMREAD_GRAYSCALE);
+    Mat img = imread(filename, IMREAD_GRAYSCALE);
     if( img.empty() )
     {
-        help(argv);
+        help();
         printf("Cannot read image file: %s\n", filename.c_str());
         return -1;
     }

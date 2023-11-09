@@ -5,11 +5,10 @@
  */
 
 #include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
-#include <iostream>
 
 using namespace cv;
-using namespace std;
 
 /// Global variables
 Mat src, erosion_dst, dilation_dst;
@@ -25,21 +24,16 @@ int const max_kernel_size = 21;
 void Erosion( int, void* );
 void Dilation( int, void* );
 
-//![main]
 /**
  * @function main
  */
-int main( int argc, char** argv )
+int main( int, char** argv )
 {
   /// Load an image
-  CommandLineParser parser( argc, argv, "{@input | LinuxLogo.jpg | input image}" );
-  src = imread( samples::findFile( parser.get<String>( "@input" ) ), IMREAD_COLOR );
+  src = imread( argv[1], IMREAD_COLOR );
+
   if( src.empty() )
-  {
-    cout << "Could not open or find the image!\n" << endl;
-    cout << "Usage: " << argv[0] << " <Input image>" << endl;
-    return -1;
-  }
+    { return -1; }
 
   /// Create windows
   namedWindow( "Erosion Demo", WINDOW_AUTOSIZE );
@@ -71,7 +65,6 @@ int main( int argc, char** argv )
   waitKey(0);
   return 0;
 }
-//![main]
 
 //![erosion]
 /**

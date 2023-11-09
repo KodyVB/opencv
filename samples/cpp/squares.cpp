@@ -1,4 +1,3 @@
-
 // The "Square Detector" program.
 // It loads several images sequentially and tries to find squares in
 // each image
@@ -9,18 +8,22 @@
 #include "opencv2/highgui.hpp"
 
 #include <iostream>
+#include <math.h>
+#include <string.h>
 
 using namespace cv;
 using namespace std;
 
-static void help(const char* programName)
+static void help()
 {
     cout <<
-    "\nA program using pyramid scaling, Canny, contours and contour simplification\n"
-    "to find squares in a list of images (pic1-6.png)\n"
+    "\nA program using pyramid scaling, Canny, contours, contour simpification and\n"
+    "memory storage (it's got it all folks) to find\n"
+    "squares in a list of images pic1-6.png\n"
     "Returns sequence of squares detected on the image.\n"
+    "the sequence is stored in the specified memory storage\n"
     "Call:\n"
-    "./" << programName << " [file_name (optional)]\n"
+    "./squares [file_name (optional)]\n"
     "Using OpenCV version " << CV_VERSION << "\n" << endl;
 }
 
@@ -41,6 +44,7 @@ static double angle( Point pt1, Point pt2, Point pt0 )
 }
 
 // returns sequence of squares detected on the image.
+// the sequence is stored in the specified memory storage
 static void findSquares( const Mat& image, vector<vector<Point> >& squares )
 {
     squares.clear();
@@ -89,7 +93,7 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
             {
                 // approximate contour with accuracy proportional
                 // to the contour perimeter
-                approxPolyDP(contours[i], approx, arcLength(contours[i], true)*0.02, true);
+                approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true)*0.02, true);
 
                 // square contours should have 4 vertices after approximation
                 // relatively large area (to filter out noisy contours)
@@ -98,8 +102,8 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
                 // area may be positive or negative - in accordance with the
                 // contour orientation
                 if( approx.size() == 4 &&
-                    fabs(contourArea(approx)) > 1000 &&
-                    isContourConvex(approx) )
+                    fabs(contourArea(Mat(approx))) > 1000 &&
+                    isContourConvex(Mat(approx)) )
                 {
                     double maxCosine = 0;
 
@@ -121,35 +125,49 @@ static void findSquares( const Mat& image, vector<vector<Point> >& squares )
     }
 }
 
+
+// the function draws all the squares in the image
+static void drawSquares( Mat& image, const vector<vector<Point> >& squares )
+{
+    for( size_t i = 0; i < squares.size(); i++ )
+    {
+        const Point* p = &squares[i][0];
+        int n = (int)squares[i].size();
+        polylines(image, &p, &n, 1, true, Scalar(0,255,0), 3, LINE_AA);
+    }
+
+    imshow(wndname, image);
+}
+
+
 int main(int argc, char** argv)
 {
-    const char* names[] = { "pic1.png", "pic2.png", "pic3.png",
-        "pic4.png", "pic5.png", "pic6.png", 0 };
-    help(argv[0]);
+    static const char* names[] = { "../data/pic1.png", "../data/pic2.png", "../data/pic3.png",
+        "../data/pic4.png", "../data/pic5.png", "../data/pic6.png", 0 };
+    help();
 
     if( argc > 1)
     {
      names[0] =  argv[1];
-     names[1] =  0;
+     names[1] =  "0";
     }
+
+    namedWindow( wndname, 1 );
+    vector<vector<Point> > squares;
 
     for( int i = 0; names[i] != 0; i++ )
     {
-        string filename = samples::findFile(names[i]);
-        Mat image = imread(filename, IMREAD_COLOR);
+        Mat image = imread(names[i], 1);
         if( image.empty() )
         {
-            cout << "Couldn't load " << filename << endl;
+            cout << "Couldn't load " << names[i] << endl;
             continue;
         }
 
-        vector<vector<Point> > squares;
         findSquares(image, squares);
+        drawSquares(image, squares);
 
-        polylines(image, squares, true, Scalar(0, 255, 0), 3, LINE_AA);
-        imshow(wndname, image);
-
-        int c = waitKey();
+        char c = (char)waitKey();
         if( c == 27 )
             break;
     }

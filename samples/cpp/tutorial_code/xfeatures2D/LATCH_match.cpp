@@ -4,12 +4,10 @@
 
 #ifdef HAVE_OPENCV_XFEATURES2D
 
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/opencv.hpp>
 #include <vector>
 
 // If you find this code useful, please add a reference to the following paper in your work:
@@ -21,17 +19,15 @@ using namespace cv;
 const float inlier_threshold = 2.5f; // Distance threshold to identify inliers
 const float nn_match_ratio = 0.8f;   // Nearest neighbor matching ratio
 
-int main(int argc, char* argv[])
+int main(void)
 {
-    CommandLineParser parser(argc, argv,
-                             "{@img1 | graf1.png | input image 1}"
-                             "{@img2 | graf3.png | input image 2}"
-                             "{@homography | H1to3p.xml | homography matrix}");
-    Mat img1 = imread( samples::findFile( parser.get<String>("@img1") ), IMREAD_GRAYSCALE);
-    Mat img2 = imread( samples::findFile( parser.get<String>("@img2") ), IMREAD_GRAYSCALE);
+    Mat img1 = imread("../data/graf1.png", IMREAD_GRAYSCALE);
+    Mat img2 = imread("../data/graf3.png", IMREAD_GRAYSCALE);
+
 
     Mat homography;
-    FileStorage fs( samples::findFile( parser.get<String>("@homography") ), FileStorage::READ);
+    FileStorage fs("../data/H1to3p.xml", FileStorage::READ);
+
     fs.getFirstTopLevelNode() >> homography;
 
     vector<KeyPoint> kpts1, kpts2;
@@ -85,7 +81,7 @@ int main(int argc, char* argv[])
 
     Mat res;
     drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
-    imwrite("latch_result.png", res);
+    imwrite("../../samples/data/latch_res.png", res);
 
 
     double inlier_ratio = inliers1.size() * 1.0 / matched1.size();
@@ -97,10 +93,6 @@ int main(int argc, char* argv[])
     cout << "# Inliers:                            \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
     cout << endl;
-
-    imshow("result", res);
-    waitKey();
-
     return 0;
 }
 

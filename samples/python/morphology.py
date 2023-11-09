@@ -18,10 +18,12 @@ import sys
 PY3 = sys.version_info[0] == 3
 
 import numpy as np
-import cv2 as cv
+import cv2
 
 
-def main():
+if __name__ == '__main__':
+    print(__doc__)
+
     import sys
     from itertools import cycle
     from common import draw_str
@@ -29,15 +31,15 @@ def main():
     try:
         fn = sys.argv[1]
     except:
-        fn = 'baboon.jpg'
+        fn = '../data/baboon.jpg'
 
-    img = cv.imread(cv.samples.findFile(fn))
+    img = cv2.imread(fn)
 
     if img is None:
         print('Failed to load image file:', fn)
         sys.exit(1)
 
-    cv.imshow('original', img)
+    cv2.imshow('original', img)
 
     modes = cycle(['erode/dilate', 'open/close', 'blackhat/tophat', 'gradient'])
     str_modes = cycle(['ellipse', 'rect', 'cross'])
@@ -50,11 +52,8 @@ def main():
         cur_str_mode = str_modes.next()
 
     def update(dummy=None):
-        try: # do not get trackbar position while trackbar is not created
-            sz = cv.getTrackbarPos('op/size', 'morphology')
-            iters = cv.getTrackbarPos('iters', 'morphology')
-        except:
-            return
+        sz = cv2.getTrackbarPos('op/size', 'morphology')
+        iters = cv2.getTrackbarPos('iters', 'morphology')
         opers = cur_mode.split('/')
         if len(opers) > 1:
             sz = sz - 10
@@ -66,21 +65,21 @@ def main():
 
         str_name = 'MORPH_' + cur_str_mode.upper()
         oper_name = 'MORPH_' + op.upper()
-        st = cv.getStructuringElement(getattr(cv, str_name), (sz, sz))
-        res = cv.morphologyEx(img, getattr(cv, oper_name), st, iterations=iters)
+        st = cv2.getStructuringElement(getattr(cv2, str_name), (sz, sz))
+        res = cv2.morphologyEx(img, getattr(cv2, oper_name), st, iterations=iters)
 
         draw_str(res, (10, 20), 'mode: ' + cur_mode)
         draw_str(res, (10, 40), 'operation: ' + oper_name)
         draw_str(res, (10, 60), 'structure: ' + str_name)
         draw_str(res, (10, 80), 'ksize: %d  iters: %d' % (sz, iters))
-        cv.imshow('morphology', res)
+        cv2.imshow('morphology', res)
 
-    cv.namedWindow('morphology')
-    cv.createTrackbar('op/size', 'morphology', 12, 20, update)
-    cv.createTrackbar('iters', 'morphology', 1, 10, update)
+    cv2.namedWindow('morphology')
+    cv2.createTrackbar('op/size', 'morphology', 12, 20, update)
+    cv2.createTrackbar('iters', 'morphology', 1, 10, update)
     update()
     while True:
-        ch = cv.waitKey()
+        ch = cv2.waitKey()
         if ch == 27:
             break
         if ch == ord('1'):
@@ -94,11 +93,4 @@ def main():
             else:
                 cur_str_mode = str_modes.next()
         update()
-
-    print('Done')
-
-
-if __name__ == '__main__':
-    print(__doc__)
-    main()
-    cv.destroyAllWindows()
+    cv2.destroyAllWindows()

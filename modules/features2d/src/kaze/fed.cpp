@@ -72,7 +72,7 @@ int fed_tau_by_cycle_time(const float& t, const float& tau_max,
   float scale = 0.0;  // Ratio of t we search to maximal t
 
   // Compute necessary number of time steps
-  n = cvCeil(sqrtf(3.0f*t/tau_max+0.25f)-0.5f-1.0e-8f);
+  n = (int)(ceilf(sqrtf(3.0f*t/tau_max+0.25f)-0.5f-1.0e-8f)+ 0.5f);
   scale = 3.0f*t/(tau_max*(float)(n*(n+1)));
 
   // Call internal FED time step creation routine

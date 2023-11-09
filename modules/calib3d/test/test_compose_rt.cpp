@@ -42,7 +42,8 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 class Differential
 {
@@ -154,14 +155,14 @@ protected:
         Mat rvec3_exp, tvec3_exp;
 
         Mat rmat1, rmat2;
-        cv::Rodrigues(rvec1, rmat1); // TODO cvtest
-        cv::Rodrigues(rvec2, rmat2); // TODO cvtest
-        cv::Rodrigues(rmat2 * rmat1, rvec3_exp); // TODO cvtest
+        Rodrigues(rvec1, rmat1);
+        Rodrigues(rvec2, rmat2);
+        Rodrigues(rmat2 * rmat1, rvec3_exp);
 
         tvec3_exp = rmat2 * tvec1 + tvec2;
 
         const double thres = 1e-5;
-        if (cv::norm(rvec3_exp, rvec3) > thres ||  cv::norm(tvec3_exp, tvec3) > thres)
+        if (norm(rvec3_exp, rvec3) > thres ||  norm(tvec3_exp, tvec3) > thres)
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
 
         const double eps = 1e-3;
@@ -175,7 +176,7 @@ protected:
         Mat_<double> dr3_dr1, dt3_dr1;
            diff.dRv1(dr3_dr1, dt3_dr1);
 
-        if (cv::norm(dr3_dr1, dr3dr1) > thres || cv::norm(dt3_dr1, dt3dr1) > thres)
+        if (norm(dr3_dr1, dr3dr1) > thres || norm(dt3_dr1, dt3dr1) > thres)
         {
             ts->printf( cvtest::TS::LOG, "Invalid derivates by r1\n" );
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -184,7 +185,7 @@ protected:
         Mat_<double> dr3_dr2, dt3_dr2;
            diff.dRv2(dr3_dr2, dt3_dr2);
 
-        if (cv::norm(dr3_dr2, dr3dr2) > thres || cv::norm(dt3_dr2, dt3dr2) > thres)
+        if (norm(dr3_dr2, dr3dr2) > thres || norm(dt3_dr2, dt3dr2) > thres)
         {
             ts->printf( cvtest::TS::LOG, "Invalid derivates by r2\n" );
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -193,7 +194,7 @@ protected:
         Mat_<double> dr3_dt1, dt3_dt1;
            diff.dTv1(dr3_dt1, dt3_dt1);
 
-        if (cv::norm(dr3_dt1, dr3dt1) > thres || cv::norm(dt3_dt1, dt3dt1) > thres)
+        if (norm(dr3_dt1, dr3dt1) > thres || norm(dt3_dt1, dt3dt1) > thres)
         {
             ts->printf( cvtest::TS::LOG, "Invalid derivates by t1\n" );
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -202,7 +203,7 @@ protected:
         Mat_<double> dr3_dt2, dt3_dt2;
            diff.dTv2(dr3_dt2, dt3_dt2);
 
-        if (cv::norm(dr3_dt2, dr3dt2) > thres || cv::norm(dt3_dt2, dt3dt2) > thres)
+        if (norm(dr3_dt2, dr3dt2) > thres || norm(dt3_dt2, dt3dt2) > thres)
         {
             ts->printf( cvtest::TS::LOG, "Invalid derivates by t2\n" );
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -211,5 +212,3 @@ protected:
 };
 
 TEST(Calib3d_ComposeRT, accuracy) { CV_composeRT_Test test; test.safe_run(); }
-
-}} // namespace

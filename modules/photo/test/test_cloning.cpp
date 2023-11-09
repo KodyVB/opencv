@@ -39,10 +39,6 @@
 //
 //M*/
 
-#include "test_precomp.hpp"
-
-namespace opencv_test { namespace {
-
 #define OUTPUT_SAVING 0
 #if OUTPUT_SAVING
 #define SAVE(x) std::vector<int> params;\
@@ -53,7 +49,14 @@ namespace opencv_test { namespace {
 #define SAVE(x)
 #endif
 
-static const double numerical_precision = 0.05; // 95% of pixels should have exact values
+#include "test_precomp.hpp"
+#include "opencv2/photo.hpp"
+#include <string>
+
+using namespace cv;
+using namespace std;
+
+static const double numerical_precision = 1000.;
 
 TEST(Photo_SeamlessClone_normal, regression)
 {
@@ -82,19 +85,8 @@ TEST(Photo_SeamlessClone_normal, regression)
 
     SAVE(result);
 
-    double errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    double errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
-
-    mask = Scalar(0, 0, 0);
-    seamlessClone(source, destination, mask, p, result, 1);
-
-    reference = destination;
-    errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
+    double error = cvtest::norm(reference, result, NORM_L1);
+    EXPECT_LE(error, numerical_precision);
 }
 
 TEST(Photo_SeamlessClone_mixed, regression)
@@ -124,10 +116,9 @@ TEST(Photo_SeamlessClone_mixed, regression)
     Mat reference = imread(reference_path);
     ASSERT_FALSE(reference.empty()) << "Could not load reference image " << reference_path;
 
-    double errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    double errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
+    double error = cvtest::norm(reference, result, NORM_L1);
+    EXPECT_LE(error, numerical_precision);
+
 }
 
 TEST(Photo_SeamlessClone_featureExchange, regression)
@@ -157,10 +148,9 @@ TEST(Photo_SeamlessClone_featureExchange, regression)
     Mat reference = imread(reference_path);
     ASSERT_FALSE(reference.empty()) << "Could not load reference image " << reference_path;
 
-    double errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    double errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
+    double error = cvtest::norm(reference, result, NORM_L1);
+    EXPECT_LE(error, numerical_precision);
+
 }
 
 TEST(Photo_SeamlessClone_colorChange, regression)
@@ -184,10 +174,9 @@ TEST(Photo_SeamlessClone_colorChange, regression)
     Mat reference = imread(reference_path);
     ASSERT_FALSE(reference.empty()) << "Could not load reference image " << reference_path;
 
-    double errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    double errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
+    double error = cvtest::norm(reference, result, NORM_L1);
+    EXPECT_LE(error, numerical_precision);
+
 }
 
 TEST(Photo_SeamlessClone_illuminationChange, regression)
@@ -209,12 +198,9 @@ TEST(Photo_SeamlessClone_illuminationChange, regression)
     SAVE(result);
 
     Mat reference = imread(reference_path);
-    ASSERT_FALSE(reference.empty()) << "Could not load reference image " << reference_path;
+    double error = cvtest::norm(reference, result, NORM_L1);
+    EXPECT_LE(error, numerical_precision);
 
-    double errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    double errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
 }
 
 TEST(Photo_SeamlessClone_textureFlattening, regression)
@@ -238,10 +224,7 @@ TEST(Photo_SeamlessClone_textureFlattening, regression)
     Mat reference = imread(reference_path);
     ASSERT_FALSE(reference.empty()) << "Could not load reference image " << reference_path;
 
-    double errorINF = cvtest::norm(reference, result, NORM_INF);
-    EXPECT_LE(errorINF, 1);
-    double errorL1 = cvtest::norm(reference, result, NORM_L1);
-    EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
-}
+    double error = cvtest::norm(reference, result, NORM_L1);
+    EXPECT_LE(error, numerical_precision);
 
-}} // namespace
+}

@@ -8,44 +8,11 @@
 // OpenVX related functions
 
 #include "precomp.hpp"
-#include "opencv2/core/utils/tls.hpp"
 #include "opencv2/core/ovx.hpp"
 #include "opencv2/core/openvx/ovx_defs.hpp"
 
 namespace cv
 {
-
-namespace ovx
-{
-#ifdef HAVE_OPENVX
-
-// Simple TLSData<ivx::Context> doesn't work, because default constructor doesn't create any OpenVX context.
-struct OpenVXTLSData
-{
-    OpenVXTLSData() : ctx(ivx::Context::create()) {}
-    ivx::Context ctx;
-};
-
-static TLSData<OpenVXTLSData>& getOpenVXTLSData()
-{
-    CV_SINGLETON_LAZY_INIT_REF(TLSData<OpenVXTLSData>, new TLSData<OpenVXTLSData>())
-}
-
-struct OpenVXCleanupFunctor
-{
-    ~OpenVXCleanupFunctor() { getOpenVXTLSData().cleanup(); }
-};
-static OpenVXCleanupFunctor g_openvx_cleanup_functor;
-
-ivx::Context& getOpenVXContext()
-{
-    return getOpenVXTLSData().get()->ctx;
-}
-
-#endif
-
-} // namespace
-
 
 bool haveOpenVX()
 {
@@ -55,7 +22,7 @@ bool haveOpenVX()
     {
         try
         {
-        ivx::Context context = ovx::getOpenVXContext();
+        ivx::Context context = ivx::Context::create();
         vx_uint16 vComp = ivx::compiledWithVersion();
         vx_uint16 vCurr = context.version();
         g_haveOpenVX =
@@ -77,13 +44,13 @@ bool haveOpenVX()
 bool useOpenVX()
 {
 #ifdef HAVE_OPENVX
-    CoreTLSData& data = getCoreTlsData();
-    if (data.useOpenVX < 0)
+    CoreTLSData* data = getCoreTlsData().get();
+    if( data->useOpenVX < 0 )
     {
         // enabled (if available) by default
-        data.useOpenVX = haveOpenVX() ? 1 : 0;
+        data->useOpenVX = haveOpenVX() ? 1 : 0;
     }
-    return data.useOpenVX > 0;
+    return data->useOpenVX > 0;
 #else
     return false;
 #endif
@@ -94,8 +61,8 @@ void setUseOpenVX(bool flag)
 #ifdef HAVE_OPENVX
     if( haveOpenVX() )
     {
-        CoreTLSData& data = getCoreTlsData();
-        data.useOpenVX = flag ? 1 : 0;
+        CoreTLSData* data = getCoreTlsData().get();
+        data->useOpenVX = flag ? 1 : 0;
     }
 #else
     CV_Assert(!flag && "OpenVX support isn't enabled at compile time");

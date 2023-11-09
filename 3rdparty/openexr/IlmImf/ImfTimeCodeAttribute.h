@@ -2,9 +2,9 @@
 //
 // Copyright (c) 2004, Industrial Light & Magic, a division of Lucas
 // Digital Ltd. LLC
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -16,8 +16,8 @@
 // distribution.
 // *       Neither the name of Industrial Light & Magic nor the names of
 // its contributors may be used to endorse or promote products derived
-// from this software without specific prior written permission. 
-// 
+// from this software without specific prior written permission.
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -43,32 +43,30 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "ImfAttribute.h"
-#include "ImfTimeCode.h"
-
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_ENTER
+#include <ImfAttribute.h>
+#include <ImfTimeCode.h>
 
 
-typedef TypedAttribute<OPENEXR_IMF_INTERNAL_NAMESPACE::TimeCode> TimeCodeAttribute;
+namespace Imf {
+
+
+typedef TypedAttribute<TimeCode> TimeCodeAttribute;
 
 template <>
-IMF_EXPORT
 const char *TimeCodeAttribute::staticTypeName ();
 
 template <>
-IMF_EXPORT
-void TimeCodeAttribute::writeValueTo (OPENEXR_IMF_INTERNAL_NAMESPACE::OStream &,
-                                      int) const;
+void TimeCodeAttribute::writeValueTo (OStream &, int) const;
 
 template <>
-IMF_EXPORT
-void TimeCodeAttribute::readValueFrom (OPENEXR_IMF_INTERNAL_NAMESPACE::IStream &,
-                                       int, int);
+void TimeCodeAttribute::readValueFrom (IStream &, int, int);
 
 
-OPENEXR_IMF_INTERNAL_NAMESPACE_HEADER_EXIT
+} // namespace Imf
 
-
-
+// Metrowerks compiler wants the .cpp file inlined, too
+#ifdef __MWERKS__
+#include <ImfTimeCodeAttribute.cpp>
+#endif
 
 #endif

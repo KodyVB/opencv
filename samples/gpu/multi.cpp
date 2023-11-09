@@ -1,4 +1,4 @@
-/* This sample demonstrates the way you can perform independent tasks
+/* This sample demonstrates the way you can perform independed tasks
    on the different GPUs */
 
 // Disable some warnings which are caused with CUDA headers
@@ -7,14 +7,29 @@
 #endif
 
 #include <iostream>
+#include "opencv2/cvconfig.h"
 #include "opencv2/core.hpp"
 #include "opencv2/cudaarithm.hpp"
 
-#if !defined(HAVE_CUDA)
+#ifdef HAVE_TBB
+#  include "tbb/tbb.h"
+#  include "tbb/task.h"
+#  undef min
+#  undef max
+#endif
+
+#if !defined(HAVE_CUDA) || !defined(HAVE_TBB)
 
 int main()
 {
-    std::cout << "CUDA support is required (OpenCV CMake parameter 'WITH_CUDA' must be true)." << std::endl;
+#if !defined(HAVE_CUDA)
+    std::cout << "CUDA support is required (CMake key 'WITH_CUDA' must be true).\n";
+#endif
+
+#if !defined(HAVE_TBB)
+    std::cout << "TBB support is required (CMake key 'WITH_TBB' must be true).\n";
+#endif
+
     return 0;
 }
 
@@ -24,14 +39,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::cuda;
 
-struct Worker : public cv::ParallelLoopBody
-{
-    void operator()(const Range& r) const CV_OVERRIDE
-    {
-        for (int i = r.start; i < r.end; ++i) { this->operator()(i); }
-    }
-    void operator()(int device_id) const;
-};
+struct Worker { void operator()(int device_id) const; };
 
 int main()
 {
@@ -56,8 +64,8 @@ int main()
     }
 
     // Execute calculation in two threads using two GPUs
-    cv::Range devices(0, 2);
-    cv::parallel_for_(devices, Worker(), devices.size());
+    int devices[] = {0, 1};
+    tbb::parallel_do(devices, devices + 2, Worker());
 
     return 0;
 }

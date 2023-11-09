@@ -48,15 +48,12 @@
 #include "opencv2/core/hal/interface.h"
 #include "opencv2/imgproc/hal/interface.h"
 
-#if defined(__clang__)  // clang or MSVC clang
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4100)
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+#if defined __GNUC__
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wunused-parameter"
+#elif defined _MSC_VER
+#  pragma warning( push )
+#  pragma warning( disable: 4100 )
 #endif
 
 //! @addtogroup imgproc_hal_interface
@@ -274,7 +271,7 @@ inline int hal_ni_resize(int src_type, const uchar *src_data, size_t src_step, i
  */
 inline int hal_ni_warpAffine(int src_type, const uchar *src_data, size_t src_step, int src_width, int src_height, uchar *dst_data, size_t dst_step, int dst_width, int dst_height, const double M[6], int interpolation, int borderType, const double borderValue[4]) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
 /**
-   @brief hal_warpPerspective
+   @brief hal_warpPerspectve
    @param src_type source and destination image type
    @param src_data source image data
    @param src_step source image step
@@ -290,22 +287,19 @@ inline int hal_ni_warpAffine(int src_type, const uchar *src_data, size_t src_ste
    @param borderValue values to use for CV_HAL_BORDER_CONSTANT mode
    @sa cv::warpPerspective, cv::hal::warpPerspective
  */
-inline int hal_ni_warpPerspective(int src_type, const uchar *src_data, size_t src_step, int src_width, int src_height, uchar *dst_data, size_t dst_step, int dst_width, int dst_height, const double M[9], int interpolation, int borderType, const double borderValue[4]) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
+inline int hal_ni_warpPerspectve(int src_type, const uchar *src_data, size_t src_step, int src_width, int src_height, uchar *dst_data, size_t dst_step, int dst_width, int dst_height, const double M[9], int interpolation, int borderType, const double borderValue[4]) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
 
 //! @cond IGNORED
 #define cv_hal_resize hal_ni_resize
 #define cv_hal_warpAffine hal_ni_warpAffine
-#define cv_hal_warpPerspective hal_ni_warpPerspective
+#define cv_hal_warpPerspective hal_ni_warpPerspectve
 //! @endcond
 
 /**
    @brief hal_cvtBGRtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U, CV_32F)
    @param scn source image channels (3 or 4)
    @param dcn destination image channels (3 or 4)
@@ -316,12 +310,9 @@ inline int hal_ni_cvtBGRtoBGR(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtBGRtoBGR5x5
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
    @param greenBits number of bits for green channel (5 or 6)
@@ -332,12 +323,9 @@ inline int hal_ni_cvtBGRtoBGR5x5(const uchar * src_data, size_t src_step, uchar 
 
 /**
    @brief hal_cvtBGR5x5toBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
    @param greenBits number of bits for green channel (5 or 6)
@@ -348,12 +336,9 @@ inline int hal_ni_cvtBGR5x5toBGR(const uchar * src_data, size_t src_step, uchar 
 
 /**
    @brief hal_cvtBGRtoGray
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U or CV_32F)
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
@@ -363,12 +348,9 @@ inline int hal_ni_cvtBGRtoGray(const uchar * src_data, size_t src_step, uchar * 
 
 /**
    @brief hal_cvtGraytoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U or CV_32F)
    @param dcn destination image channels (3 or 4)
    Convert from 1-channel gray to BGR, RGB, RGBA or BGRA.
@@ -377,12 +359,9 @@ inline int hal_ni_cvtGraytoBGR(const uchar * src_data, size_t src_step, uchar * 
 
 /**
    @brief hal_cvtBGR5x5toGray
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param greenBits number of bits for green channel (5 or 6)
    Convert from packed BGR (16 bits per pixel, 555 or 565) to 1-channel gray.
    Support only CV_8U images.
@@ -391,12 +370,9 @@ inline int hal_ni_cvtBGR5x5toGray(const uchar * src_data, size_t src_step, uchar
 
 /**
    @brief hal_cvtGraytoBGR5x5
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param greenBits number of bits for green channel (5 or 6)
    Convert from 1-channel gray to packed BGR (16 bits per pixel, 555 or 565).
    Support only CV_8U images.
@@ -405,12 +381,9 @@ inline int hal_ni_cvtGraytoBGR5x5(const uchar * src_data, size_t src_step, uchar
 
 /**
    @brief hal_cvtBGRtoYUV
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U or CV_32F)
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
@@ -421,12 +394,9 @@ inline int hal_ni_cvtBGRtoYUV(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtYUVtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U or CV_32F)
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
@@ -437,12 +407,9 @@ inline int hal_ni_cvtYUVtoBGR(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtBGRtoXYZ
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U or CV_32F)
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
@@ -452,12 +419,9 @@ inline int hal_ni_cvtBGRtoXYZ(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtXYZtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U, CV_16U or CV_32F)
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
@@ -467,12 +431,9 @@ inline int hal_ni_cvtXYZtoBGR(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtBGRtoHSV
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U or CV_32F)
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
@@ -484,12 +445,9 @@ inline int hal_ni_cvtBGRtoHSV(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtHSVtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U or CV_32F)
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
@@ -501,12 +459,9 @@ inline int hal_ni_cvtHSVtoBGR(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtBGRtoLab
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U or CV_32F)
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
@@ -518,12 +473,9 @@ inline int hal_ni_cvtBGRtoLab(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtLabtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param depth image depth (one of CV_8U or CV_32F)
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
@@ -535,12 +487,9 @@ inline int hal_ni_cvtLabtoBGR(const uchar * src_data, size_t src_step, uchar * d
 
 /**
    @brief hal_cvtTwoPlaneYUVtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param dst_width destination image width
-   @param dst_height destination image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param dst_width,dst_height destination image size
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
    @param uIdx U-channel index in the interleaved U/V plane (0 or 1)
@@ -550,54 +499,10 @@ inline int hal_ni_cvtLabtoBGR(const uchar * src_data, size_t src_step, uchar * d
 inline int hal_ni_cvtTwoPlaneYUVtoBGR(const uchar * src_data, size_t src_step, uchar * dst_data, size_t dst_step, int dst_width, int dst_height, int dcn, bool swapBlue, int uIdx) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
 
 /**
-   @brief Extended version of hal_cvtTwoPlaneYUVtoBGR.
-   @param y_data source image data (Y-plane)
-   @param y_step source image step (Y-plane)
-   @param uv_data source image data (UV-plane)
-   @param uv_step source image step (UV-plane)
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param dst_width destination image width
-   @param dst_height destination image height
-   @param dcn destination image channels (3 or 4)
-   @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
-   @param uIdx U-channel index in the interleaved U/V plane (0 or 1)
-   Convert from YUV (YUV420sp (or NV12/NV21) - Y plane followed by interleaved U/V plane) to BGR, RGB, BGRA or RGBA.
-   Only for CV_8U.
- */
-inline int hal_ni_cvtTwoPlaneYUVtoBGREx(const uchar * y_data, size_t y_step, const uchar * uv_data, size_t uv_step,
-                                      uchar * dst_data, size_t dst_step, int dst_width, int dst_height,
-                                      int dcn, bool swapBlue, int uIdx) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-/**
-   @brief hal_cvtBGRtoTwoPlaneYUV
-   @param src_data source image data
-   @param src_step source image step
-   @param y_data destination image data (Y-plane)
-   @param y_step destination image step (Y-plane)
-   @param uv_data destination image data (UV-plane)
-   @param uv_step destination image step (UV-plane)
-   @param width image width
-   @param height image height
-   @param scn source image channels (3 or 4)
-   @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
-   @param uIdx U-channel plane index (0 or 1)
-   Convert from BGR, RGB, BGRA or RGBA to YUV (YUV420sp (or NV12/NV21) - Y plane followed by interleaved U/V plane).
-   Only for CV_8U.
- */
-inline int hal_ni_cvtBGRtoTwoPlaneYUV(const uchar * src_data, size_t src_step,
-                                      uchar * y_data, size_t y_step, uchar * uv_data, size_t uv_step,
-                                      int width, int height,
-                                      int scn, bool swapBlue, int uIdx) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-/**
    @brief hal_cvtThreePlaneYUVtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param dst_width destination image width
-   @param dst_height destination image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param dst_width,dst_height destination image size
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
    @param uIdx U-channel plane index (0 or 1)
@@ -608,12 +513,9 @@ inline int hal_ni_cvtThreePlaneYUVtoBGR(const uchar * src_data, size_t src_step,
 
 /**
    @brief hal_cvtBGRtoThreePlaneYUV
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param scn source image channels (3 or 4)
    @param swapBlue if set to true B and R source channels will be swapped (treat as RGB)
    @param uIdx U-channel plane index (0 or 1)
@@ -624,12 +526,9 @@ inline int hal_ni_cvtBGRtoThreePlaneYUV(const uchar * src_data, size_t src_step,
 
 /**
    @brief hal_cvtOnePlaneYUVtoBGR
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    @param dcn destination image channels (3 or 4)
    @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
    @param uIdx U-channel index (0 or 1)
@@ -639,28 +538,12 @@ inline int hal_ni_cvtBGRtoThreePlaneYUV(const uchar * src_data, size_t src_step,
  */
 inline int hal_ni_cvtOnePlaneYUVtoBGR(const uchar * src_data, size_t src_step, uchar * dst_data, size_t dst_step, int width, int height, int dcn, bool swapBlue, int uIdx, int ycn) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
 
-/**
-   @brief hal_cvtOnePlaneBGRtoYUV
-   @param src_data,src_step source image data and step
-   @param dst_data,dst_step destination image data and step
-   @param width,height image size
-   @param scn source image channels (3 or 4)
-   @param swapBlue if set to true B and R destination channels will be swapped (write RGB)
-   @param uIdx U-channel index (0 or 1)
-   @param ycn Y-channel index (0 or 1)
-   Convert from BGR, RGB, BGRA or RGBA to UYVY, YUY2 or YVYU.
-   Only for CV_8U.
- */
-inline int hal_ni_cvtOnePlaneBGRtoYUV(const uchar * src_data, size_t src_step, uchar * dst_data, size_t dst_step, int width, int height, int scn, bool swapBlue, int uIdx, int ycn) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
 
 /**
    @brief hal_cvtRGBAtoMultipliedRGBA
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    Convert from BGRA or RGBA to format with multiplied alpha channel.
    Only for CV_8U.
  */
@@ -668,12 +551,9 @@ inline int hal_ni_cvtRGBAtoMultipliedRGBA(const uchar * src_data, size_t src_ste
 
 /**
    @brief hal_cvtMultipliedRGBAtoRGBA
-   @param src_data source image data
-   @param src_step source image step
-   @param dst_data destination image data
-   @param dst_step destination image step
-   @param width image width
-   @param height image height
+   @param src_data,src_step source image data and step
+   @param dst_data,dst_step destination image data and step
+   @param width,height image size
    Convert from format with multiplied alpha channel to BGRA or RGBA.
    Only for CV_8U.
  */
@@ -696,31 +576,21 @@ inline int hal_ni_cvtMultipliedRGBAtoRGBA(const uchar * src_data, size_t src_ste
 #define cv_hal_cvtBGRtoLab hal_ni_cvtBGRtoLab
 #define cv_hal_cvtLabtoBGR hal_ni_cvtLabtoBGR
 #define cv_hal_cvtTwoPlaneYUVtoBGR hal_ni_cvtTwoPlaneYUVtoBGR
-#define cv_hal_cvtTwoPlaneYUVtoBGREx hal_ni_cvtTwoPlaneYUVtoBGREx
-#define cv_hal_cvtBGRtoTwoPlaneYUV hal_ni_cvtBGRtoTwoPlaneYUV
 #define cv_hal_cvtThreePlaneYUVtoBGR hal_ni_cvtThreePlaneYUVtoBGR
 #define cv_hal_cvtBGRtoThreePlaneYUV hal_ni_cvtBGRtoThreePlaneYUV
 #define cv_hal_cvtOnePlaneYUVtoBGR hal_ni_cvtOnePlaneYUVtoBGR
-#define cv_hal_cvtOnePlaneBGRtoYUV hal_ni_cvtOnePlaneBGRtoYUV
 #define cv_hal_cvtRGBAtoMultipliedRGBA hal_ni_cvtRGBAtoMultipliedRGBA
 #define cv_hal_cvtMultipliedRGBAtoRGBA hal_ni_cvtMultipliedRGBAtoRGBA
 //! @endcond
 
 /**
    @brief Calculate integral image
-   @param depth Depth of source image
-   @param sdepth Depth of sum image
-   @param sqdepth Depth of square sum image
-   @param src_data Source image data
-   @param src_step Source image step
-   @param sum_data Sum image data
-   @param sum_step Sum image step
-   @param sqsum_data Square sum image data
-   @param sqsum_step Square sum image step
-   @param tilted_data Tilted sum image data
-   @param tilted_step Tilted sum image step
-   @param width Source image width
-   @param height Source image height
+   @param depth,sdepth,sqdepth Depths of source image, sum image and square sum image
+   @param src_data,src_step Source image
+   @param sum_data,sum_step Sum image
+   @param sqsum_data,sqsum_step Square sum image
+   @param tilted_data,tilted_step Tilted sum image
+   @param width,height Source image dimensions
    @param cn Number of channels
    @note Following combinations of image depths are used:
    Source | Sum | Square sum
@@ -745,228 +615,19 @@ inline int hal_ni_integral(int depth, int sdepth, int sqdepth, const uchar * src
 #define cv_hal_integral hal_ni_integral
 //! @endcond
 
-/**
-   @brief Calculate medianBlur filter
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param depth Depths of source and destination image
-   @param cn Number of channels
-   @param ksize Size of kernel
-*/
-inline int hal_ni_medianBlur(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int depth, int cn, int ksize) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_medianBlur hal_ni_medianBlur
-//! @endcond
-
-/**
-   @brief Calculates adaptive threshold
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param maxValue Value assigned to the pixels for which the condition is satisfied
-   @param adaptiveMethod Adaptive thresholding algorithm
-   @param thresholdType Thresholding type
-   @param blockSize Size of a pixel neighborhood that is used to calculate a threshold value
-   @param C Constant subtracted from the mean or weighted mean
-*/
-inline int hal_ni_adaptiveThreshold(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, double maxValue, int adaptiveMethod, int thresholdType, int blockSize, double C) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_adaptiveThreshold  hal_ni_adaptiveThreshold
-//! @endcond
-
-/**
-   @brief Calculates fixed-level threshold to each array element
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param depth Depths of source and destination image
-   @param cn Number of channels
-   @param thresh Threshold value
-   @param maxValue Value assigned to the pixels for which the condition is satisfied
-   @param thresholdType Thresholding type
-*/
-inline int hal_ni_threshold(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int depth, int cn, double thresh, double maxValue, int thresholdType) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_threshold hal_ni_threshold
-//! @endcond
-
-/**
-   @brief Calculate box filter
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param src_depth Depth of source image
-   @param dst_depth Depts of destination image
-   @param cn Number of channels
-   @param margin_left Left margins for source image
-   @param margin_top Top margins for source image
-   @param margin_right Right margins for source image
-   @param margin_bottom Bottom margins for source image
-   @param ksize_width Width of kernel
-   @param ksize_height Height of kernel
-   @param anchor_x Anchor point x coordinate
-   @param anchor_y Anchor point y coordinate
-   @param normalize If true then result is normalized
-   @param border_type Border type
-*/
-inline int hal_ni_boxFilter(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int src_depth, int dst_depth, int cn, int margin_left, int margin_top, int margin_right, int margin_bottom, size_t ksize_width, size_t ksize_height, int anchor_x, int anchor_y, bool normalize, int border_type) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_boxFilter hal_ni_boxFilter
-//! @endcond
-
-/**
-   @brief Blurs an image using a Gaussian filter.
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param depth Depth of source and destination image
-   @param cn Number of channels
-   @param margin_left Left margins for source image
-   @param margin_top Top margins for source image
-   @param margin_right Right margins for source image
-   @param margin_bottom Bottom margins for source image
-   @param ksize_width Width of kernel
-   @param ksize_height Height of kernel
-   @param sigmaX Gaussian kernel standard deviation.
-   @param sigmaY Gaussian kernel standard deviation.
-   @param border_type Border type
-*/
-inline int hal_ni_gaussianBlur(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int depth, int cn, size_t margin_left, size_t margin_top, size_t margin_right, size_t margin_bottom, size_t ksize_width, size_t ksize_height, double sigmaX, double sigmaY, int border_type) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_gaussianBlur hal_ni_gaussianBlur
-//! @endcond
-
-/**
-   @brief Computes Sobel derivatives
-   @param src_depth Depth of source image
-   @param dst_depth Depts of destination image
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param cn Number of channels
-   @param margin_left Left margins for source image
-   @param margin_top Top margins for source image
-   @param margin_right Right margins for source image
-   @param margin_bottom Bottom margins for source image
-   @param dx orders of the derivative x
-   @param dy orders of the derivative y
-   @param ksize Size of kernel
-   @param scale Scale factor for the computed derivative values
-   @param delta Delta value that is added to the results prior to storing them in dst
-   @param border_type Border type
-*/
-inline int hal_ni_sobel(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int src_depth, int dst_depth, int cn, int margin_left, int margin_top, int margin_right, int margin_bottom, int dx, int dy, int ksize, double scale, double delta, int border_type) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_sobel hal_ni_sobel
-//! @endcond
-
-/**
-   @brief Computes Scharr filter
-   @param src_depth Depth of source image
-   @param dst_depth Depts of destination image
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param cn Number of channels
-   @param margin_left Left margins for source image
-   @param margin_top Top margins for source image
-   @param margin_right Right margins for source image
-   @param margin_bottom Bottom margins for source image
-   @param dx orders of the derivative x
-   @param dy orders of the derivative y
-   @param scale Scale factor for the computed derivative values
-   @param delta Delta value that is added to the results prior to storing them in dst
-   @param border_type Border type
-*/
-inline int hal_ni_scharr(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int src_depth, int dst_depth, int cn, int margin_left, int margin_top, int margin_right, int margin_bottom, int dx, int dy, double scale, double delta, int border_type)  { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_scharr hal_ni_scharr
-//! @endcond
-
-/**
-   @brief Perform Gaussian Blur and downsampling for input tile.
-   @param depth Depths of source and destination image
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param src_width Source image width
-   @param src_height Source image height
-   @param dst_width Destination image width
-   @param dst_height Destination image height
-   @param cn Number of channels
-   @param border_type Border type
-*/
-inline int hal_ni_pyrdown(const uchar* src_data, size_t src_step, int src_width, int src_height, uchar* dst_data, size_t dst_step, int dst_width, int dst_height, int depth, int cn, int border_type) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_pyrdown hal_ni_pyrdown
-//! @endcond
-
-/**
-   @brief Canny edge detector
-   @param src_data Source image data
-   @param src_step Source image step
-   @param dst_data Destination image data
-   @param dst_step Destination image step
-   @param width Source image width
-   @param height Source image height
-   @param cn Number of channels
-   @param lowThreshold low hresholds value
-   @param highThreshold high thresholds value
-   @param ksize Kernel size for Sobel operator.
-   @param L2gradient Flag, indicating use L2 or L1 norma.
-*/
-inline int hal_ni_canny(const uchar* src_data, size_t src_step, uchar* dst_data, size_t dst_step, int width, int height, int cn, double lowThreshold, double highThreshold, int ksize, bool L2gradient) { return CV_HAL_ERROR_NOT_IMPLEMENTED; }
-
-//! @cond IGNORED
-#define cv_hal_canny hal_ni_canny
-//! @endcond
-
 //! @}
 
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#elif defined(__GNUC__)
-#pragma GCC diagnostic pop
+#if defined __GNUC__
+#  pragma GCC diagnostic pop
+#elif defined _MSC_VER
+#  pragma warning( pop )
 #endif
 
 #include "custom_hal.hpp"
 
 //! @cond IGNORED
 #define CALL_HAL_RET(name, fun, retval, ...) \
-    int res = __CV_EXPAND(fun(__VA_ARGS__, &retval)); \
+    int res = fun(__VA_ARGS__, &retval); \
     if (res == CV_HAL_ERROR_OK) \
         return retval; \
     else if (res != CV_HAL_ERROR_NOT_IMPLEMENTED) \
@@ -975,7 +636,7 @@ inline int hal_ni_canny(const uchar* src_data, size_t src_step, uchar* dst_data,
 
 
 #define CALL_HAL(name, fun, ...) \
-    int res = __CV_EXPAND(fun(__VA_ARGS__)); \
+    int res = fun(__VA_ARGS__); \
     if (res == CV_HAL_ERROR_OK) \
         return; \
     else if (res != CV_HAL_ERROR_NOT_IMPLEMENTED) \

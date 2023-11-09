@@ -41,7 +41,8 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test { namespace {
+using namespace cv;
+using namespace std;
 
 class CV_FloodFillTest : public cvtest::ArrayTest
 {
@@ -60,9 +61,9 @@ protected:
     void get_timing_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<int> >& types
                                                 CvSize** whole_sizes, bool *are_images );
     void print_timing_params( int test_case_idx, char* ptr, int params_left );*/
-    Point seed_pt;
-    Scalar new_val;
-    Scalar l_diff, u_diff;
+    CvPoint seed_pt;
+    CvScalar new_val;
+    CvScalar l_diff, u_diff;
     int connectivity;
     bool use_mask, mask_only;
     int range_type;
@@ -115,8 +116,8 @@ void CV_FloodFillTest::get_test_array_types_and_sizes( int test_case_idx,
         sizes[INPUT_OUTPUT][1] = sizes[REF_INPUT_OUTPUT][1] = cvSize(0,0);
     else
     {
-        Size sz = sizes[INPUT_OUTPUT][0];
-        sizes[INPUT_OUTPUT][1] = sizes[REF_INPUT_OUTPUT][1] = Size(sz.width+2,sz.height+2);
+        CvSize sz = sizes[INPUT_OUTPUT][0];
+        sizes[INPUT_OUTPUT][1] = sizes[REF_INPUT_OUTPUT][1] = cvSize(sz.width+2,sz.height+2);
     }
 
     seed_pt.x = cvtest::randInt(rng) % sizes[INPUT_OUTPUT][0].width;
@@ -194,7 +195,7 @@ void CV_FloodFillTest::run_func()
     if(!test_cpp)
     {
         CvConnectedComp comp;
-        cvFloodFill( test_array[INPUT_OUTPUT][0], cvPoint(seed_pt), cvScalar(new_val), cvScalar(l_diff), cvScalar(u_diff), &comp,
+        cvFloodFill( test_array[INPUT_OUTPUT][0], seed_pt, new_val, l_diff, u_diff, &comp,
                      flags, test_array[INPUT_OUTPUT][1] );
         odata[0] = comp.area;
         odata[1] = comp.rect.x;
@@ -269,7 +270,7 @@ cvTsFloodFill( CvMat* _img, CvPoint seed_pt, CvScalar new_val,
     {
         Mat m_mask = cvarrToMat(mask);
         cvtest::set( m_mask, Scalar::all(0), Mat() );
-        cvRectangle( mask, cvPoint(0,0), cvPoint(mask->cols-1,mask->rows-1), cvScalar(Scalar::all(1.)), 1, 8, 0 );
+        cvRectangle( mask, cvPoint(0,0), cvPoint(mask->cols-1,mask->rows-1), Scalar::all(1.), 1, 8, 0 );
     }
 
     new_mask_val = (new_mask_val != 0 ? new_mask_val : 1) << 8;
@@ -515,9 +516,9 @@ _exit_:
 void CV_FloodFillTest::prepare_to_validation( int /*test_case_idx*/ )
 {
     double* comp = test_mat[REF_OUTPUT][0].ptr<double>();
-    CvMat _input = cvMat(test_mat[REF_INPUT_OUTPUT][0]);
-    CvMat _mask = cvMat(test_mat[REF_INPUT_OUTPUT][1]);
-    cvTsFloodFill( &_input, cvPoint(seed_pt), cvScalar(new_val), cvScalar(l_diff), cvScalar(u_diff),
+    CvMat _input = test_mat[REF_INPUT_OUTPUT][0];
+    CvMat _mask = test_mat[REF_INPUT_OUTPUT][1];
+    cvTsFloodFill( &_input, seed_pt, new_val, l_diff, u_diff,
                    _mask.data.ptr ? &_mask : 0,
                    comp, connectivity, range_type,
                    new_mask_val, mask_only );
@@ -531,15 +532,14 @@ TEST(Imgproc_FloodFill, maskValue)
 {
     const int n = 50;
     Mat img = Mat::zeros(n, n, CV_8U);
-    Mat mask;
+    Mat mask = Mat::zeros(n + 2, n + 2, CV_8U);
 
     circle(img, Point(n/2, n/2), 20, Scalar(100), 4);
 
-    int flags = 4 + FLOODFILL_MASK_ONLY;
+    int flags = 4 + CV_FLOODFILL_MASK_ONLY;
     floodFill(img, mask, Point(n/2 + 13, n/2), Scalar(100), NULL, Scalar(),  Scalar(), flags);
 
-    ASSERT_EQ(1, cvtest::norm(mask.rowRange(1, n-1).colRange(1, n-1), NORM_INF));
+    ASSERT_TRUE(norm(mask.rowRange(1, n-1).colRange(1, n-1), NORM_INF) == 1.);
 }
 
-}} // namespace
 /* End of file. */
